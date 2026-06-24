@@ -1,0 +1,407 @@
+/** Zoom Chat site-wide floating modal styles **/
+
+/* Floating bubble badge (bottom-left) */
+#local-zoomchat-bubble {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: #0d6efd;
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.15s;
+    border: none;
+}
+
+#local-zoomchat-bubble:hover {
+    background-color: #0b5ed7;
+    color: #fff;
+}
+
+#local-zoomchat-bubble:focus-visible {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+#local-zoomchat-bubble .local-zoomchat-bubble-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+#local-zoomchat-bubble .local-zoomchat-bubble-count {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    background-color: #dc3545;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+    padding: 0 4px;
+}
+
+/* Modal layout via core/modal */
+.local-zoomchat-modal-root .modal-body {
+    display: flex;
+    height: 60vh;
+    min-height: 400px;
+}
+
+.local-zoomchat-modal-root [data-region="body"] {
+    padding: 0;
+    overflow: hidden;
+}
+
+#local-zoomchat-modal-body {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    width: 100%;
+}
+
+/* Left panel — conversation list */
+#local-zoomchat-convlist {
+    border-right: 1px solid #dee2e6;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+#local-zoomchat-convlist .local-zoomchat-convlist-header {
+    padding: 12px 12px 8px;
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom: 1px solid #dee2e6;
+    flex-shrink: 0;
+}
+
+#local-zoomchat-convlist .local-zoomchat-convlist-items {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.local-zoomchat-conv-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.1s;
+}
+
+.local-zoomchat-conv-item:hover {
+    background-color: #f8f9fa;
+}
+
+.local-zoomchat-conv-item:focus-visible {
+    outline: 2px solid #0d6efd;
+    outline-offset: -2px;
+}
+
+.local-zoomchat-conv-item.active {
+    background-color: #e9ecef;
+}
+
+.local-zoomchat-conv-item .local-zoomchat-conv-avatar {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.local-zoomchat-conv-item .local-zoomchat-conv-avatar img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.local-zoomchat-conv-item .local-zoomchat-conv-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.local-zoomchat-conv-item .local-zoomchat-conv-name {
+    font-weight: 600;
+    font-size: 13px;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.local-zoomchat-conv-item .local-zoomchat-conv-preview {
+    font-size: 12px;
+    color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+
+.local-zoomchat-conv-item .local-zoomchat-conv-meta {
+    flex-shrink: 0;
+    text-align: right;
+}
+
+.local-zoomchat-conv-item .local-zoomchat-conv-time {
+    font-size: 10px;
+    color: #adb5bd;
+}
+
+.local-zoomchat-conv-item .local-zoomchat-conv-unread {
+    display: none;
+    background-color: #dc3545;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    line-height: 18px;
+    border-radius: 9px;
+    text-align: center;
+    padding: 0 4px;
+    margin-top: 2px;
+}
+
+.local-zoomchat-conv-item.local-zoomchat-has-unread .local-zoomchat-conv-unread {
+    display: inline-block;
+}
+
+/* Right panel — chat area */
+#local-zoomchat-chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+#local-zoomchat-chat .local-zoomchat-chat-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #dee2e6;
+    flex-shrink: 0;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+#local-zoomchat-chat .local-zoomchat-back-btn {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+@media (max-width: 576px) {
+    #local-zoomchat-convlist {
+        width: 100%;
+        min-width: 100%;
+    }
+    #local-zoomchat-convlist.local-zoomchat-convlist-hidden {
+        display: none;
+    }
+    #local-zoomchat-chat .local-zoomchat-back-btn {
+        display: inline-block;
+    }
+}
+
+#local-zoomchat-chat .local-zoomchat-messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+}
+
+#local-zoomchat-messages-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#local-zoomchat-chat .local-zoomchat-msg {
+    display: flex;
+    flex-direction: column;
+    max-width: 75%;
+}
+
+#local-zoomchat-chat .local-zoomchat-msg-mine {
+    align-self: flex-end;
+}
+
+#local-zoomchat-chat .local-zoomchat-msg-theirs {
+    align-self: flex-start;
+}
+
+#local-zoomchat-chat .local-zoomchat-bubble {
+    background: #f1f3f5;
+    border-radius: 12px 12px 12px 4px;
+    padding: 8px 14px;
+    word-wrap: break-word;
+}
+
+#local-zoomchat-chat .local-zoomchat-bubble img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    display: block;
+}
+
+#local-zoomchat-chat .local-zoomchat-msg-mine .local-zoomchat-bubble {
+    background: #0d6efd;
+    color: #fff;
+}
+
+#local-zoomchat-chat .local-zoomchat-msg-time {
+    font-size: 10px;
+    color: #6c757d;
+    margin-top: 2px;
+    text-align: right;
+}
+
+#local-zoomchat-chat .local-zoomchat-input-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-top: 1px solid #dee2e6;
+    flex-shrink: 0;
+}
+
+#local-zoomchat-chat .local-zoomchat-input-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#local-zoomchat-message-input {
+    width: 100%;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 14px;
+    resize: none;
+}
+
+#local-zoomchat-message-input:focus {
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+#local-zoomchat-chat .local-zoomchat-btn {
+    flex-shrink: 0;
+}
+
+#local-zoomchat-input-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+/* Attachment preview thumbnails */
+#local-zoomchat-attachment-previews {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+#local-zoomchat-attachment-previews .local-zoomchat-attach-thumb {
+    width: 48px;
+    height: 48px;
+}
+
+#local-zoomchat-attachment-previews .local-zoomchat-attach-thumb img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+}
+
+#local-zoomchat-attachment-previews .local-zoomchat-attach-remove {
+    font-size: 8px;
+}
+
+/* Toast notifications */
+.local-zoomchat-toast-container {
+    position: fixed;
+    bottom: 76px;
+    left: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 360px;
+    pointer-events: auto;
+}
+
+.local-zoomchat-toast-container .local-zoomchat-toast {
+    width: 100%;
+    cursor: pointer;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 0.375rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    transition: opacity 0.3s;
+}
+
+.local-zoomchat-toast-container .local-zoomchat-toast:hover {
+    box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.2);
+}
+
+.local-zoomchat-toast-container .local-zoomchat-toast .toast-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background: #fff;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.local-zoomchat-toast-container .local-zoomchat-toast .toast-body {
+    padding: 8px 10px;
+    color: #495057;
+    font-size: 13px;
+}
+
+/* Empty state */
+.local-zoomchat-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #6c757d;
+    font-style: italic;
+    padding: 20px;
+}
+
+.local-zoomchat-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #6c757d;
+    padding: 20px;
+}

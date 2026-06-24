@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/zoomchat/db" VERSION="2026061600" COMMENT="XMLDB file for Moodle local/zoomchat"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="local_zoomchat_messages" COMMENT="Stores all chat messages">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="from_zoom_id" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Raw Zoom user ID of the sender"/>
+        <FIELD NAME="to_zoom_id" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Raw Zoom user ID of the recipient"/>
+        <FIELD NAME="channel_id" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Raw Zoom channel ID for group messages"/>
+        <FIELD NAME="message" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timestamp" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="zoom_message_id" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Unique Zoom message ID for update/delete tracking"/>
+        <FIELD NAME="deleted" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Soft-delete flag"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="from-zoom-id" UNIQUE="false" FIELDS="from_zoom_id"/>
+        <INDEX NAME="to-zoom-id" UNIQUE="false" FIELDS="to_zoom_id"/>
+        <INDEX NAME="channel-id" UNIQUE="false" FIELDS="channel_id"/>
+        <INDEX NAME="timestamp" UNIQUE="false" FIELDS="timestamp"/>
+        <INDEX NAME="zoom-message-id" UNIQUE="false" FIELDS="zoom_message_id"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_zoomchat_message_files" COMMENT="Links uploaded file itemids to their parent message for access control">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="messageid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to local_zoomchat_messages.id"/>
+        <FIELD NAME="itemid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="File itemid from the attachment file area"/>
+        <FIELD NAME="filename" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Original filename"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="messageid-fk" TYPE="foreign" FIELDS="messageid" REFTABLE="local_zoomchat_messages" REFFIELDS="id"/>
+        <KEY NAME="messageid-itemid-uk" TYPE="unique" FIELDS="messageid, itemid"/>
+      </KEYS>
+    </TABLE>
+  </TABLES>
+</XMLDB>

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Version information for local_zoomchat.
+ * Settings for local_zoomchat
  *
  * @package local_zoomchat
  * @copyright 2026 Jonathan Champ
@@ -24,12 +24,16 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_zoomchat';
-$plugin->version = 2026062500;
-$plugin->requires = 2024100700;
-$plugin->release = 'v0.8.0';
-$plugin->maturity = MATURITY_BETA;
-$plugin->dependencies = [
-    'tool_zoomapi' => 2026060300,
-    'tool_realtime' => 2026030601,
-];
+if ($hassiteconfig) {
+    $settings = new admin_settingpage('local_zoomchat', new lang_string('pluginname', 'local_zoomchat'));
+    $ADMIN->add('localplugins', $settings);
+}
+
+if ($hassiteconfig && $ADMIN->fulltree) {
+    $settings->add(new admin_setting_configpasswordunmask(
+        'local_zoomchat/webhook_secret',
+        new lang_string('webhook_secret', 'local_zoomchat'),
+        new lang_string('webhook_secret_desc', 'local_zoomchat'),
+        '',
+    ));
+}

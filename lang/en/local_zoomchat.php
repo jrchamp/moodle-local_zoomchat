@@ -51,5 +51,7 @@ $string['selectcontact'] = 'Select a contact';
 $string['send'] = 'Send';
 $string['sending'] = 'Sending...';
 $string['unknownuser'] = 'Unknown user';
+$string['webhook_secret'] = 'Webhook secret';
+$string['webhook_secret_desc'] = 'The secret key used to verify incoming Zoom webhook requests. This must match the secret configured in the Zoom Marketplace app\'s webhook settings.';
 $string['zoomchat'] = 'Zoom Chat';
 $string['zoomchat:chat'] = 'Use Zoom Chat site-wide';

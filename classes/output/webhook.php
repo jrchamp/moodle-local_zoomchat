@@ -686,6 +686,7 @@ class webhook {
      * @param int $messageid The local message ID.
      * @param string $messagetext The message text (with embedded file HTML).
      * @param int $timestamp The message timestamp.
+     * @param bool $updated Is the notification for an updated message?
      * @return void
      */
     protected static function publish_realtime_notification(

@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Version information for local_zoomchat.
+ * External functions and service definitions for local_zoomchat.
  *
  * @package    local_zoomchat
  * @copyright  2026 Jonathan Champ
@@ -24,12 +24,27 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_zoomchat';
-$plugin->version = 2026062401;
-$plugin->requires = 2024100700;
-$plugin->release = 'v0.8.0';
-$plugin->maturity = MATURITY_BETA;
-$plugin->dependencies = [
-    'tool_zoomapi' => 2026060300,
-    'tool_realtime' => 2026030601,
+use local_zoomchat\external\get_messages;
+use local_zoomchat\external\get_users;
+use local_zoomchat\external\send_message;
+
+$functions = [
+    'local_zoomchat_get_messages' => [
+        'classname' => get_messages::class,
+        'description' => 'Get messages for a conversation with another user',
+        'type' => 'read',
+        'ajax' => true,
+    ],
+    'local_zoomchat_get_users' => [
+        'classname' => get_users::class,
+        'description' => 'Get users the current user can chat with (conversations + course contacts)',
+        'type' => 'read',
+        'ajax' => true,
+    ],
+    'local_zoomchat_send_message' => [
+        'classname' => send_message::class,
+        'description' => 'Send a message via Zoom Team Chat',
+        'type' => 'write',
+        'ajax' => true,
+    ],
 ];

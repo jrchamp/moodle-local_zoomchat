@@ -27,11 +27,11 @@ namespace local_zoomchat\output;
 use core\clock;
 use core\context\system as context_system;
 use core\di;
-use Exception;
 use local_zoomchat\api;
 use local_zoomchat\helper;
 use moodle_url;
 use stdClass;
+use Throwable;
 use tool_zoomapi\helper as zoomapi_helper;
 
 /**
@@ -604,7 +604,7 @@ class webhook {
                 $filedownload = $zoomapi->download_chat_file($fileid);
                 $content = $filedownload['content'];
                 $filename = $filedownload['filename'] ?: $filename;
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 debugging("Zoom webhook: failed to download file {$fileid}: " . $e->getMessage(), DEBUG_DEVELOPER);
                 continue;
             }
@@ -623,7 +623,7 @@ class webhook {
 
             try {
                 $fs->create_file_from_string($filerecord, $content);
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 debugging("Zoom webhook: failed to store file {$cleanname}: " . $e->getMessage(), DEBUG_DEVELOPER);
                 continue;
             }

@@ -28,6 +28,10 @@ use core\clock;
 use core\context\course as context_course;
 use core\context\system as context_system;
 use core\di;
+use core\exception\moodle_exception;
+use stdClass;
+use Throwable;
+use tool_realtime\channel;
 use tool_zoomapi\helper as zoomapi_helper;
 
 /**
@@ -55,7 +59,7 @@ class helper {
     ): int {
         global $DB;
 
-        $message = new \stdClass();
+        $message = new stdClass();
         $message->from_zoom_id = $fromzoomid;
         $message->to_zoom_id = $tozoomid;
         $message->channel_id = $channelid;
@@ -73,7 +77,7 @@ class helper {
      * @param \stdClass $user The Moodle user.
      * @return array Array of conversation records.
      */
-    public static function get_conversations_with_latest_message(\stdClass $user): array {
+    public static function get_conversations_with_latest_message(stdClass $user): array {
         global $DB;
 
         $zoomid = zoomapi_helper::get_userid_optional();
@@ -133,7 +137,7 @@ class helper {
      * @param int $courseid The course ID.
      * @return array Array of user records (those with Zoom accounts).
      */
-    public static function get_course_contacts(\stdClass $user, int $courseid): array {
+    public static function get_course_contacts(stdClass $user, int $courseid): array {
         if ($courseid <= 0) {
             return [];
         }
@@ -157,7 +161,7 @@ class helper {
                 if (!empty($zoomuser) && !empty($zoomuser['email'])) {
                     $contacts[] = $candidate;
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 continue;
             }
         }
@@ -175,7 +179,7 @@ class helper {
      * @return array Array of message records.
      */
     public static function get_zoom_conversation_messages(
-        \stdClass $user,
+        stdClass $user,
         string $partnerzoomid,
         int $limitfrom = 0,
         int $limitnum = 0
@@ -216,8 +220,8 @@ class helper {
      * @return int|false The message ID, or false on failure.
      */
     public static function send_message_to_zoom(
-        \stdClass $sender,
-        \stdClass $recipient,
+        stdClass $sender,
+        stdClass $recipient,
         string $messagetext,
         string $fileitemids = '',
         int $contextid = 0
@@ -251,7 +255,7 @@ class helper {
 
         try {
             $zoomresponse = api::instance()->create_user_message($senderzoom['id'], $zoompayload);
-        } catch (\moodle_exception $e) {
+        } catch (moodle_exception $e) {
             debugging('Failed to send Zoom DM: ' . $e->getMessage(), DEBUG_DEVELOPER);
             return false;
         }
@@ -339,7 +343,7 @@ class helper {
             );
             unlink($temppath);
             return $zoomfileid;
-        } catch (\moodle_exception $e) {
+        } catch (moodle_exception $e) {
             @unlink($temppath);
             debugging('Failed to upload file to Zoom: ' . $e->getMessage(), DEBUG_DEVELOPER);
             return null;
@@ -368,7 +372,7 @@ class helper {
             $fs = get_file_storage();
             $files = $fs->get_area_files($contextid, 'local_zoomchat', 'attachment', $itemid, 'filename ASC', false);
             foreach ($files as $file) {
-                $record = new \stdClass();
+                $record = new stdClass();
                 $record->messageid = $messageid;
                 $record->itemid = $itemid;
                 $record->filename = $file->get_filename();
@@ -385,7 +389,7 @@ class helper {
      * @return void
      */
     public static function notify_user(int $userid, array $data): void {
-        $channel = new \tool_realtime\channel(
+        $channel = new channel(
             context_system::instance(),
             'local_zoomchat',
             'zoomchat',
@@ -401,7 +405,7 @@ class helper {
      * @param string $zoommessageid The Zoom message ID.
      * @return \stdClass|null The message record or null.
      */
-    public static function get_message_by_zoom_id(string $zoommessageid): ?\stdClass {
+    public static function get_message_by_zoom_id(string $zoommessageid): ?stdClass {
         global $DB;
 
         $record = $DB->get_record('local_zoomchat_messages', ['zoom_message_id' => $zoommessageid]);

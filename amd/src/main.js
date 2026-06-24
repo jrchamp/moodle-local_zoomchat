@@ -23,6 +23,7 @@
 
 /* eslint-disable camelcase */
 
+import {call as fetchMany} from 'core/ajax';
 import Modal from 'core/modal';
 import Notification from 'core/notification';
 import {get_strings} from 'core/str';
@@ -67,18 +68,7 @@ let pendingAttachments = [];
 let realtimeConnected = true;
 let pollTimer = null;
 
-const apiUrl = M.cfg.wwwroot + '/local/zoomchat/ajax.php';
-
-const apiRequest = (params) => {
-    const formBody = Object.entries(params).map(([key, value]) =>
-        encodeURIComponent(key) + '=' + encodeURIComponent(value)
-    ).join('&');
-    return fetch(apiUrl, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: formBody
-    }).then((r) => r.json());
-};
+const uploadUrl = M.cfg.wwwroot + '/local/zoomchat/ajax.php';
 
 const escapeHtml = (str) => {
     const el = document.createElement('span');
@@ -335,12 +325,10 @@ const loadConversations = async() => {
     convListEl.innerHTML = '<div class="local-zoomchat-loading">' + escapeHtml(strSending) + '</div>';
 
     try {
-        const data = await apiRequest({
-            action: 'get_users',
-            userid: config.userid,
-            courseid: config.courseid || 0,
-            sesskey: M.cfg.sesskey
-        });
+        const data = await fetchMany([{
+            methodname: 'local_zoomchat_get_users',
+            args: {courseid: config.courseid || 0}
+        }])[0];
 
         convListEl.innerHTML = '';
 
@@ -429,13 +417,10 @@ const selectConversation = (partnerId, partnerName) => {
 
 const loadMessages = async(partnerId, since) => {
     try {
-        const data = await apiRequest({
-            action: 'get_messages',
-            userid: config.userid,
-            partnerid: partnerId,
-            lasttime: since,
-            sesskey: M.cfg.sesskey
-        });
+        const data = await fetchMany([{
+            methodname: 'local_zoomchat_get_messages',
+            args: {partnerid: partnerId, lasttime: since || 0}
+        }])[0];
 
         if (data.messages) {
             data.messages.forEach((msg) => renderMessage(msg));
@@ -507,19 +492,19 @@ const sendMessage = async() => {
     const filehtml = pendingAttachments.map((a) => a.html).join('');
     const fullmessage = text.trim() + filehtml;
 
-    const params = {
-        action: 'send_message',
-        userid: config.userid,
+    const sendArgs = {
         recipientid: selectedPartnerId,
         message: fullmessage,
-        sesskey: M.cfg.sesskey
     };
     if (pendingAttachments.length > 0) {
-        params.file_itemids = pendingAttachments.map((a) => a.fileitemid).join(',');
+        sendArgs.file_itemids = pendingAttachments.map((a) => a.fileitemid).join(',');
     }
 
     try {
-        const data = await apiRequest(params);
+        const data = await fetchMany([{
+            methodname: 'local_zoomchat_send_message',
+            args: sendArgs
+        }])[0];
         if (data.success) {
             messageInput.value = '';
             pendingAttachments = [];
@@ -547,7 +532,7 @@ const uploadImage = async(file) => {
     formData.append('attachment', file);
 
     try {
-        const response = await fetch(apiUrl, {
+        const response = await fetch(uploadUrl, {
             method: 'POST',
             body: formData
         });

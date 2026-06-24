@@ -18,6 +18,7 @@ namespace local_zoomchat;
 
 use core\context\system as context_system;
 use core\hook\output\before_http_headers;
+use Throwable;
 use tool_realtime\channel;
 use tool_realtime\manager as realtime_manager;
 
@@ -53,16 +54,16 @@ class callbacks {
             if (!has_capability('local/zoomchat:chat', context_system::instance())) {
                 return;
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Before the plugin is installed, the capability doesn't exist...
             return;
         }
 
         $channelhash = null;
         $realtimeenabled = false;
-        if (class_exists('\tool_realtime\manager') && realtime_manager::is_enabled('local_zoomchat')) {
+        if (class_exists(realtime_manager::class) && realtime_manager::is_enabled('local_zoomchat')) {
             $channel = new channel(
-                \core\context\system::instance(),
+                context_system::instance(),
                 'local_zoomchat',
                 'zoomchat',
                 0,
@@ -79,8 +80,9 @@ class callbacks {
             if ($coursecontext && $coursecontext->instanceid != SITEID) {
                 $courseid = $coursecontext->instanceid;
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Not in a course context.
+            $e->getMessage();
         }
 
         $PAGE->requires->js_call_amd('local_zoomchat/main', 'init', [

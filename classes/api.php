@@ -24,6 +24,8 @@
 
 namespace local_zoomchat;
 
+use core\exception\moodle_exception;
+use Throwable;
 use tool_zoomapi\api as zoomapi_base;
 
 /**
@@ -62,7 +64,7 @@ class api extends zoomapi_base {
     public function download_chat_file(string $fileid): array {
         $fileinfo = $this->get_chat_file($fileid);
         if (empty($fileinfo['download_url'])) {
-            throw new \moodle_exception('error:api', 'tool_zoomapi', '', 'No download URL for file');
+            throw new moodle_exception('error:api', 'tool_zoomapi', '', 'No download URL for file');
         }
 
         $accesstoken = $this->get_access_token();
@@ -80,7 +82,7 @@ class api extends zoomapi_base {
 
             $status = $response->getStatusCode();
             if ($status >= 400) {
-                throw new \moodle_exception('error:api', 'tool_zoomapi', '', 'File download failed with status ' . $status);
+                throw new moodle_exception('error:api', 'tool_zoomapi', '', 'File download failed with status ' . $status);
             }
 
             return [
@@ -88,10 +90,10 @@ class api extends zoomapi_base {
                 'filename' => $fileinfo['file_name'] ?? 'unknown',
                 'filesize' => $fileinfo['file_size'] ?? 0,
             ];
-        } catch (\moodle_exception $e) {
+        } catch (moodle_exception $e) {
             throw $e;
-        } catch (\Exception $e) {
-            throw new \moodle_exception('error:api', 'tool_zoomapi', '', $e->getMessage());
+        } catch (Throwable $e) {
+            throw new moodle_exception('error:api', 'tool_zoomapi', '', $e->getMessage());
         }
     }
 
@@ -131,14 +133,14 @@ class api extends zoomapi_base {
 
             if ($status >= 400) {
                 $message = $body['message'] ?? $body['reason'] ?? 'File upload failed';
-                throw new \moodle_exception('error:api', 'tool_zoomapi', '', $message);
+                throw new moodle_exception('error:api', 'tool_zoomapi', '', $message);
             }
 
             return $body['id'] ?? '';
-        } catch (\moodle_exception $e) {
+        } catch (moodle_exception $e) {
             throw $e;
-        } catch (\Exception $e) {
-            throw new \moodle_exception('error:api', 'tool_zoomapi', '', $e->getMessage());
+        } catch (Throwable $e) {
+            throw new moodle_exception('error:api', 'tool_zoomapi', '', $e->getMessage());
         }
     }
 }

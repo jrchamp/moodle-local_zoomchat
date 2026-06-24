@@ -17,9 +17,9 @@
 /**
  * Handles incoming webhooks from Zoom Team Chat API for local_zoomchat.
  *
- * @package    local_zoomchat
- * @copyright  2026 Jonathan Champ
- * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package local_zoomchat
+ * @copyright 2026 Jonathan Champ
+ * @license https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace local_zoomchat\output;
@@ -40,10 +40,6 @@ use tool_zoomapi\helper as zoomapi_helper;
  * Stores incoming messages with raw Zoom IDs only. No Moodle user or chat
  * resolution is performed at webhook time. Conversation resolution happens
  * at display time using tool_zoomapi cache.
- *
- * @package local_zoomchat
- * @copyright 2026 Jonathan Champ
- * @license https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class webhook {
     /**

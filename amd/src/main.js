@@ -21,12 +21,10 @@
  * @license   https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-/* eslint-disable camelcase */
-
 import {call as fetchMany} from 'core/ajax';
 import Modal from 'core/modal';
 import Notification from 'core/notification';
-import {get_strings} from 'core/str';
+import {getStrings} from 'core/str';
 import * as PubSub from 'core/pubsub';
 import * as RealTimeEvents from 'tool_realtime/events';
 
@@ -497,7 +495,7 @@ const sendMessage = async() => {
         message: fullmessage,
     };
     if (pendingAttachments.length > 0) {
-        sendArgs.file_itemids = pendingAttachments.map((a) => a.fileitemid).join(',');
+        sendArgs.fileitemids = pendingAttachments.map((a) => a.fileitemid).join(',');
     }
 
     try {
@@ -645,60 +643,50 @@ const handleConnectionLost = () => {
 
 // --- Init ---
 
-export const init = (cfg) => {
+export const init = async(cfg) => {
     config = cfg;
 
     window.__localZoomchatLoaded = true;
 
-    get_strings([
-        {key: 'pluginname', component: 'local_zoomchat'},
-        {key: 'noconversations', component: 'local_zoomchat'},
-        {key: 'message', component: 'local_zoomchat'},
-        {key: 'send', component: 'local_zoomchat'},
-        {key: 'entermessage', component: 'local_zoomchat'},
-        {key: 'selectcontact', component: 'local_zoomchat'},
-        {key: 'attachimage', component: 'local_zoomchat'},
-        {key: 'sending', component: 'local_zoomchat'},
-        {key: 'error', component: 'core'},
-        {key: 'error:loadfailed', component: 'local_zoomchat'},
-        {key: 'error:sendfailed', component: 'local_zoomchat'},
-        {key: 'unknownuser', component: 'local_zoomchat'},
-        {key: 'image', component: 'local_zoomchat'},
-        {key: 'file', component: 'local_zoomchat'},
-        {key: 'newmessage', component: 'local_zoomchat'},
-        {key: 'close', component: 'local_zoomchat'},
-        {key: 'remove', component: 'local_zoomchat'},
-    ]).then(async([
-        zchat, nocnv, msg, snd, enter, sel, attach, sending,
-        err, loadfail, sendfail, unknown, img, file, newmsg, close, remove
-    ]) => {
-        strZoomchat = zchat;
-        strNoconversations = nocnv;
-        strMessage = msg;
-        strSend = snd;
-        strEnter = enter;
-        strSelect = sel;
-        strAttach = attach;
-        strSending = sending;
-        strError = err;
-        strErrorLoad = loadfail;
-        strErrorSend = sendfail;
-        strUnknown = unknown;
-        strImage = img;
-        strFile = file;
-        strNew = newmsg;
-        strClose = close;
-        strRemove = remove;
-
-        createBubble();
-        createToastContainer();
-        await createModal();
-
-        PubSub.subscribe(RealTimeEvents.EVENT, handleRealtimeEvent);
-        PubSub.subscribe(RealTimeEvents.CONNECTION_LOST, handleConnectionLost);
-
-        return;
-    }).catch(async() => {
+    try {
+        [
+            strZoomchat,
+            strNoconversations,
+            strMessage,
+            strSend,
+            strEnter,
+            strSelect,
+            strAttach,
+            strSending,
+            strError,
+            strErrorLoad,
+            strErrorSend,
+            strUnknown,
+            strImage,
+            strFile,
+            strNew,
+            strClose,
+            strRemove,
+        ] = await getStrings([
+            {key: 'pluginname', component: 'local_zoomchat'},
+            {key: 'noconversations', component: 'local_zoomchat'},
+            {key: 'message', component: 'local_zoomchat'},
+            {key: 'send', component: 'local_zoomchat'},
+            {key: 'entermessage', component: 'local_zoomchat'},
+            {key: 'selectcontact', component: 'local_zoomchat'},
+            {key: 'attachimage', component: 'local_zoomchat'},
+            {key: 'sending', component: 'local_zoomchat'},
+            {key: 'error', component: 'core'},
+            {key: 'error:loadfailed', component: 'local_zoomchat'},
+            {key: 'error:sendfailed', component: 'local_zoomchat'},
+            {key: 'unknownuser', component: 'local_zoomchat'},
+            {key: 'image', component: 'local_zoomchat'},
+            {key: 'file', component: 'local_zoomchat'},
+            {key: 'newmessage', component: 'local_zoomchat'},
+            {key: 'close', component: 'local_zoomchat'},
+            {key: 'remove', component: 'local_zoomchat'},
+        ]);
+    } catch (error) {
         strZoomchat = 'Zoom Chat';
         strNoconversations = 'No conversations';
         strMessage = 'Message';
@@ -716,14 +704,14 @@ export const init = (cfg) => {
         strNew = 'New message';
         strClose = 'Close';
         strRemove = 'Remove';
+    }
 
-        createBubble();
-        createToastContainer();
-        await createModal();
+    createBubble();
+    createToastContainer();
+    await createModal();
 
-        PubSub.subscribe(RealTimeEvents.EVENT, handleRealtimeEvent);
-        PubSub.subscribe(RealTimeEvents.CONNECTION_LOST, handleConnectionLost);
-    });
+    PubSub.subscribe(RealTimeEvents.EVENT, handleRealtimeEvent);
+    PubSub.subscribe(RealTimeEvents.CONNECTION_LOST, handleConnectionLost);
 };
 
 export default {

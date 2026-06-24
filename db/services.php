@@ -17,16 +17,16 @@
 /**
  * External functions and service definitions for local_zoomchat.
  *
- * @package    local_zoomchat
- * @copyright  2026 Jonathan Champ
- * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package local_zoomchat
+ * @copyright 2026 Jonathan Champ
+ * @license https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-defined('MOODLE_INTERNAL') || die();
 
 use local_zoomchat\external\get_messages;
 use local_zoomchat\external\get_users;
 use local_zoomchat\external\send_message;
+
+defined('MOODLE_INTERNAL') || die();
 
 $functions = [
     'local_zoomchat_get_messages' => [

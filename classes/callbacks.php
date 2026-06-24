@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
+/**
+ * Hook callbacks for local_zoomchat.
+ *
+ * @package local_zoomchat
+ * @copyright 2026 Jonathan Champ
+ * @license https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 namespace local_zoomchat;
 
 use core\context\system as context_system;
@@ -24,10 +32,6 @@ use tool_realtime\manager as realtime_manager;
 
 /**
  * Hook callbacks for local_zoomchat.
- *
- * @package    local_zoomchat
- * @copyright  2026 Jonathan Champ
- * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class callbacks {
     /**

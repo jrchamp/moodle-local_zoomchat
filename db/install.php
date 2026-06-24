@@ -17,11 +17,9 @@
 /**
  * Post-install migration for local_zoomchat.
  *
- * Migrates data from the old mod_zoomchat tables if they exist.
- *
- * @package    local_zoomchat
- * @copyright  2026 Jonathan Champ
- * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package local_zoomchat
+ * @copyright 2026 Jonathan Champ
+ * @license https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 /**
@@ -31,6 +29,7 @@ function xmldb_local_zoomchat_install() {
     global $DB;
     $dbman = $DB->get_manager();
 
+    // Migrate data from the old mod_zoomchat tables if they exist.
     $hasoldmessages = $dbman->table_exists('zoomchat_messages');
     $hasoldfilemap = $dbman->table_exists('zoomchat_message_files');
 

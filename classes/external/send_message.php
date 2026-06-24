@@ -17,9 +17,9 @@
 /**
  * External function to send a message via Zoom Team Chat.
  *
- * @package    local_zoomchat
- * @copyright  2026 Jonathan Champ
- * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package local_zoomchat
+ * @copyright 2026 Jonathan Champ
+ * @license https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace local_zoomchat\external;
@@ -49,7 +49,7 @@ class send_message extends external_api {
         return new external_function_parameters([
             'recipientid' => new external_value(PARAM_INT, 'Recipient user ID', VALUE_REQUIRED),
             'message' => new external_value(PARAM_RAW, 'Message text (Moodle format)', VALUE_REQUIRED),
-            'file_itemids' => new external_value(PARAM_RAW, 'Comma-separated file itemids', VALUE_DEFAULT, ''),
+            'fileitemids' => new external_value(PARAM_RAW, 'Comma-separated file itemids', VALUE_DEFAULT, ''),
         ]);
     }
 
@@ -67,11 +67,11 @@ class send_message extends external_api {
         $params = self::validate_parameters(self::execute_parameters(), [
             'recipientid' => $recipientid,
             'message' => $message,
-            'file_itemids' => $fileitemids,
+            'fileitemids' => $fileitemids,
         ]);
         $recipientid = $params['recipientid'];
         $messagetext = $params['message'];
-        $fileitemids = $params['file_itemids'];
+        $fileitemids = $params['fileitemids'];
 
         $context = context_system::instance();
         self::validate_context($context);

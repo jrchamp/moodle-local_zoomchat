@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
+/**
+ * Data provider for local_zoomchat.
+ *
+ * @package local_zoomchat
+ * @copyright 2026 Jonathan Champ
+ * @license https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 namespace local_zoomchat\privacy;
 
 use core\context;
@@ -34,10 +42,6 @@ use tool_zoomapi\helper as zoomapi_helper;
 
 /**
  * Data provider for local_zoomchat.
- *
- * @package    local_zoomchat
- * @copyright  2026 Jonathan Champ
- * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider implements core_userlist_provider, metadata_provider, plugin_provider {
     /**

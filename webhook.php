@@ -20,9 +20,9 @@
  * This script receives webhook events from Zoom Team Chat and processes them.
  * It must be publicly accessible for Zoom to deliver events.
  *
- * @package    local_zoomchat
- * @copyright  2026 Jonathan Champ
- * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package local_zoomchat
+ * @copyright 2026 Jonathan Champ
+ * @license https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 use local_zoomchat\output\webhook;

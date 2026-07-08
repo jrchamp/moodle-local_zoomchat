@@ -50,8 +50,7 @@ class webhook {
         $payload = json_decode($rawbody, true, 512);
 
         if (!$payload) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Invalid JSON payload']);
+            self::respond(400, ['error' => 'Invalid JSON payload']);
             return;
         }
 
@@ -61,11 +60,21 @@ class webhook {
         }
 
         if (!self::validate_signature($rawbody)) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Invalid signature']);
+            self::respond(401, ['error' => 'Invalid signature']);
             return;
         }
 
+        self::dispatch_event($payload);
+
+        self::respond(200, ['status' => 'ok']);
+    }
+
+    /**
+     * Dispatch the webhook event to the appropriate handler.
+     *
+     * @param array $payload The webhook payload.
+     */
+    private static function dispatch_event(array $payload): void {
         $event = $payload['event'] ?? '';
         switch ($event) {
             case 'chat_message.sent':
@@ -85,11 +94,7 @@ class webhook {
                 break;
 
             case 'team_chat.file_deleted':
-                self::handle_file_deleted($payload);
-                break;
-
             case 'team_chat.file_unshared':
-                self::handle_file_unshared($payload);
                 break;
 
             case 'team_chat.dm_message_posted':
@@ -128,9 +133,17 @@ class webhook {
                 self::handle_unknown_event($payload);
                 break;
         }
+    }
 
-        http_response_code(200);
-        echo json_encode(['status' => 'ok']);
+    /**
+     * Send an HTTP JSON response.
+     *
+     * @param int $statuscode
+     * @param array $data
+     */
+    private static function respond(int $statuscode, array $data): void {
+        http_response_code($statuscode);
+        echo json_encode($data);
     }
 
     /**
@@ -152,25 +165,20 @@ class webhook {
         $plaintoken = $payload['payload']['plainToken'] ?? '';
 
         if (empty($plaintoken)) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Missing plainToken']);
+            self::respond(400, ['error' => 'Missing plainToken']);
             return;
         }
 
         $secret = self::get_webhook_secret();
         if (empty($secret)) {
             debugging('Zoom webhook secret not configured for validation', DEBUG_DEVELOPER);
-            http_response_code(500);
-            echo json_encode(['error' => 'Webhook secret not configured']);
+            self::respond(500, ['error' => 'Webhook secret not configured']);
             return;
         }
 
-        $encryptedtoken = hash_hmac('sha256', $plaintoken, $secret);
-
-        http_response_code(200);
-        echo json_encode([
+        self::respond(200, [
             'plainToken' => $plaintoken,
-            'encryptedToken' => $encryptedtoken,
+            'encryptedToken' => hash_hmac('sha256', $plaintoken, $secret),
         ]);
     }
 
@@ -202,9 +210,10 @@ class webhook {
             return false;
         }
 
-        $expectedsignature = hash_hmac('sha256', "v0:$timestamp:$rawbody", $secret);
-
-        return hash_equals("v0=$expectedsignature", $signature);
+        return hash_equals(
+            "v0=" . hash_hmac('sha256', "v0:$timestamp:$rawbody", $secret),
+            $signature
+        );
     }
 
     /**
@@ -216,7 +225,6 @@ class webhook {
     protected static function handle_message_sent(array $payload): void {
         $fromzoomid = self::get_operator_id($payload);
         if (empty($fromzoomid)) {
-            debugging('Zoom webhook: missing operator_id', DEBUG_DEVELOPER);
             return;
         }
 
@@ -241,14 +249,10 @@ class webhook {
             $timestamp,
             $zoommessageid
         );
-        if (!$result['messageid']) {
-            debugging('Zoom webhook: failed to store message', DEBUG_DEVELOPER);
-            return;
-        }
 
-        if ($tozoomid !== null && $result['new']) {
-            $sanitizedtext = format_text($messagetext, FORMAT_MOODLE, ['context' => context_system::instance()]);
-            self::publish_realtime_notification($fromzoomid, $tozoomid, $result['messageid'], $sanitizedtext, $timestamp);
+        if ($result['messageid'] && $tozoomid !== null && $result['new']) {
+            $sanitized = format_text($messagetext, FORMAT_MOODLE, ['context' => context_system::instance()]);
+            self::publish_notification($fromzoomid, $tozoomid, $result['messageid'], $sanitized, $timestamp);
         }
     }
 
@@ -287,30 +291,8 @@ class webhook {
         );
         if ($result && $tozoomid !== null && $result['new']) {
             $sanitized = format_text($result['filehtml'], FORMAT_MOODLE, ['context' => context_system::instance()]);
-            self::publish_realtime_notification($fromzoomid, $tozoomid, $result['messageid'], $sanitized, $timestamp);
+            self::publish_notification($fromzoomid, $tozoomid, $result['messageid'], $sanitized, $timestamp);
         }
-    }
-
-    /**
-     * Handle file deleted event from Zoom Team Chat.
-     *
-     * @param array $payload The webhook payload.
-     */
-    protected static function handle_file_deleted(array $payload): void {
-        $files = $payload['payload']['object']['files'] ?? [];
-        $fileids = array_map(fn($f) => $f['file_id'] ?? '?', $files);
-        debugging('Zoom webhook: file_deleted event (no context to act on): ' . implode(', ', $fileids), DEBUG_DEVELOPER);
-    }
-
-    /**
-     * Handle file unshared event from Zoom Team Chat.
-     *
-     * @param array $payload The webhook payload.
-     */
-    protected static function handle_file_unshared(array $payload): void {
-        $files = $payload['payload']['object']['files'] ?? [];
-        $fileids = array_map(fn($f) => $f['file_id'] ?? '?', $files);
-        debugging('Zoom webhook: file_unshared event (no file_id lookup available): ' . implode(', ', $fileids), DEBUG_DEVELOPER);
     }
 
     /**
@@ -332,10 +314,17 @@ class webhook {
         $inlinefiles = $object['files'] ?? [];
 
         if (empty($inlinefiles)) {
-            $result = helper::receive_message_from_zoom($fromzoomid, $tozoomid, null, $messagetext, $timestamp, $zoommessageid);
+            $result = helper::receive_message_from_zoom(
+                $fromzoomid,
+                $tozoomid,
+                null,
+                $messagetext,
+                $timestamp,
+                $zoommessageid
+            );
             if ($result['messageid'] && $tozoomid !== null && $result['new']) {
                 $sanitizedtext = format_text($messagetext, FORMAT_MOODLE, ['context' => context_system::instance()]);
-                self::publish_realtime_notification($fromzoomid, $tozoomid, $result['messageid'], $sanitizedtext, $timestamp);
+                self::publish_notification($fromzoomid, $tozoomid, $result['messageid'], $sanitizedtext, $timestamp);
             }
             return;
         }
@@ -351,7 +340,7 @@ class webhook {
         );
         if ($result && $tozoomid !== null && $result['new']) {
             $sanitized = format_text($result['filehtml'], FORMAT_MOODLE, ['context' => context_system::instance()]);
-            self::publish_realtime_notification($fromzoomid, $tozoomid, $result['messageid'], $sanitized, $timestamp);
+            self::publish_notification($fromzoomid, $tozoomid, $result['messageid'], $sanitized, $timestamp);
         }
     }
 
@@ -374,7 +363,14 @@ class webhook {
         $inlinefiles = $object['files'] ?? [];
 
         if (empty($inlinefiles)) {
-            helper::receive_message_from_zoom($fromzoomid, null, $channelid, $messagetext, $timestamp, $zoommessageid);
+            helper::receive_message_from_zoom(
+                $fromzoomid,
+                null,
+                $channelid,
+                $messagetext,
+                $timestamp,
+                $zoommessageid
+            );
             return;
         }
 
@@ -401,10 +397,11 @@ class webhook {
             return;
         }
 
-        $newtext = $object['message'] ?? '';
-        $timestamp = self::extract_timestamp($payload);
-
-        $updated = helper::update_message_by_zoom_id($zoommessageid, $newtext, $timestamp);
+        $updated = helper::update_message_by_zoom_id(
+            $zoommessageid,
+            $object['message'] ?? '',
+            self::extract_timestamp($payload)
+        );
         if (!$updated) {
             debugging("Zoom webhook: message_updated — no local message found for id {$zoommessageid}", DEBUG_DEVELOPER);
         }
@@ -416,8 +413,7 @@ class webhook {
      * @param array $payload The webhook payload.
      */
     protected static function handle_message_deleted(array $payload): void {
-        $object = $payload['payload']['object'] ?? [];
-        $zoommessageid = $object['id'] ?? null;
+        $zoommessageid = $payload['payload']['object']['id'] ?? null;
         if (empty($zoommessageid)) {
             return;
         }
@@ -452,7 +448,7 @@ class webhook {
         $stored = helper::get_message_by_zoom_id($zoommessageid);
         if ($stored && $stored->to_zoom_id) {
             $sanitized = format_text($newtext, FORMAT_MOODLE, ['context' => context_system::instance()]);
-            self::publish_realtime_notification(
+            self::publish_notification(
                 $stored->from_zoom_id,
                 $stored->to_zoom_id,
                 (int) $stored->id,
@@ -487,7 +483,7 @@ class webhook {
         $stored = helper::get_message_by_zoom_id($zoommessageid);
         if ($stored && $stored->to_zoom_id) {
             $sanitized = format_text($newtext, FORMAT_MOODLE, ['context' => context_system::instance()]);
-            self::publish_realtime_notification(
+            self::publish_notification(
                 $stored->from_zoom_id,
                 $stored->to_zoom_id,
                 (int) $stored->id,
@@ -504,8 +500,7 @@ class webhook {
      * @param array $payload The webhook payload.
      */
     protected static function handle_dm_message_deleted(array $payload): void {
-        $object = $payload['payload']['object'] ?? [];
-        $zoommessageid = $object['message_id'] ?? null;
+        $zoommessageid = $payload['payload']['object']['message_id'] ?? null;
         if (empty($zoommessageid)) {
             return;
         }
@@ -522,8 +517,7 @@ class webhook {
      * @param array $payload The webhook payload.
      */
     protected static function handle_channel_message_deleted(array $payload): void {
-        $object = $payload['payload']['object'] ?? [];
-        $zoommessageid = $object['message_id'] ?? null;
+        $zoommessageid = $payload['payload']['object']['message_id'] ?? null;
         if (empty($zoommessageid)) {
             return;
         }
@@ -547,8 +541,6 @@ class webhook {
     /**
      * Extract the timestamp from a webhook payload in seconds.
      *
-     * Prefers event_ts (ms), then object.timestamp (ms), then 0.
-     *
      * @param array $payload The webhook payload.
      * @return int The timestamp in seconds.
      */
@@ -567,7 +559,7 @@ class webhook {
      * @param int $timestamp Message timestamp in seconds.
      * @param string|null $zoommessageid Zoom message ID.
      * @param string $messagetext Optional text to prepend before file HTML.
-     * @return array|null Array with 'messageid' and 'filehtml', or null on failure.
+     * @return array|null Array with 'messageid', 'filehtml' and 'new', or null on failure.
      */
     protected static function download_and_store_files(
         array $files,
@@ -633,7 +625,7 @@ class webhook {
                 $cleanname
             );
 
-            if ($filetype === 'image' || preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $filename)) {
+            if ($filetype === 'image' || preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $cleanname)) {
                 $filehtml .= '<img src="' . $url->out() . '" alt="' . s($cleanname) . '">';
             } else {
                 $filehtml .= '<a href="' . $url->out() . '" target="_blank">' . s($cleanname) . '</a>';
@@ -646,32 +638,37 @@ class webhook {
             return null;
         }
 
-        if (!empty($messagetext)) {
+        if ($messagetext !== '') {
             $filehtml = $messagetext . $filehtml;
         }
 
-        $stored = helper::receive_message_from_zoom($fromzoomid, $tozoomid, $channelid, $filehtml, $timestamp, $zoommessageid);
+        $stored = helper::receive_message_from_zoom(
+            $fromzoomid,
+            $tozoomid,
+            $channelid,
+            $filehtml,
+            $timestamp,
+            $zoommessageid
+        );
         if (!$stored['messageid']) {
             return null;
         }
 
-        if (!empty($fileitemids)) {
-            foreach ($fileitemids as $itemid) {
-                $filerecs = $fs->get_area_files(
-                    $context->id,
-                    'local_zoomchat',
-                    'webhook_attachment',
-                    $itemid,
-                    'filename ASC',
-                    false
-                );
-                foreach ($filerecs as $file) {
-                    $record = new stdClass();
-                    $record->messageid = $stored['messageid'];
-                    $record->itemid = $itemid;
-                    $record->filename = $file->get_filename();
-                    $DB->insert_record('local_zoomchat_message_files', $record);
-                }
+        foreach ($fileitemids as $itemid) {
+            $filerecs = $fs->get_area_files(
+                $context->id,
+                'local_zoomchat',
+                'webhook_attachment',
+                $itemid,
+                'filename ASC',
+                false
+            );
+            foreach ($filerecs as $file) {
+                $record = new stdClass();
+                $record->messageid = $stored['messageid'];
+                $record->itemid = $itemid;
+                $record->filename = $file->get_filename();
+                $DB->insert_record('local_zoomchat_message_files', $record);
             }
         }
 
@@ -679,7 +676,7 @@ class webhook {
     }
 
     /**
-     * Publish a realtime notification for a webhook-received message.
+     * Publish a realtime notification for a message.
      *
      * @param string $fromzoomid The sender's Zoom user ID.
      * @param string $tozoomid The recipient's Zoom user ID or email.
@@ -687,9 +684,8 @@ class webhook {
      * @param string $messagetext The message text (with embedded file HTML).
      * @param int $timestamp The message timestamp.
      * @param bool $updated Is the notification for an updated message?
-     * @return void
      */
-    protected static function publish_realtime_notification(
+    private static function publish_notification(
         string $fromzoomid,
         string $tozoomid,
         int $messageid,
@@ -732,8 +728,7 @@ class webhook {
         }
 
         helper::notify_user($recipientid, $pubdata);
-
-        if ($senderuserid > 0) {
+        if ($senderid > 0) {
             helper::notify_user($senderid, $pubdata);
         }
     }

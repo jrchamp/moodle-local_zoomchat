@@ -74,10 +74,9 @@ class helper {
     /**
      * Get all conversation partners for a user with their latest message time.
      *
-     * @param \stdClass $user The Moodle user.
      * @return array Array of conversation records.
      */
-    public static function get_conversations_with_latest_message(stdClass $user): array {
+    public static function get_conversations_with_latest_message(): array {
         global $DB;
 
         $zoomid = zoomapi_helper::get_userid_optional();

@@ -42,24 +42,7 @@ class callbacks {
     public static function before_http_headers(before_http_headers $hook): void {
         global $USER, $PAGE;
 
-        if (
-            (defined('AJAX_SCRIPT') && \AJAX_SCRIPT) ||
-            (defined('CLI_SCRIPT') && \CLI_SCRIPT) ||
-            (defined('WS_SCRIPT') && \WS_SCRIPT)
-        ) {
-            return;
-        }
-
-        if (!isloggedin() || isguestuser()) {
-            return;
-        }
-
-        try {
-            if (!has_capability('local/zoomchat:chat', context_system::instance())) {
-                return;
-            }
-        } catch (Throwable $e) {
-            // Before the plugin is installed, the capability doesn't exist...
+        if (!self::should_render()) {
             return;
         }
 
@@ -86,7 +69,7 @@ class callbacks {
             }
         } catch (Throwable $e) {
             // Not in a course context.
-            $e->getMessage();
+            $courseid = 0;
         }
 
         $PAGE->requires->js_call_amd('local_zoomchat/main', 'init', [
@@ -97,5 +80,30 @@ class callbacks {
                 'realtimeEnabled' => $realtimeenabled,
             ],
         ]);
+    }
+
+    /**
+     * Check whether the chat UI should be rendered for the current request.
+     *
+     * @return bool
+     */
+    private static function should_render(): bool {
+        if (
+            (defined('AJAX_SCRIPT') && \AJAX_SCRIPT) ||
+            (defined('CLI_SCRIPT') && \CLI_SCRIPT) ||
+            (defined('WS_SCRIPT') && \WS_SCRIPT)
+        ) {
+            return false;
+        }
+
+        if (!isloggedin() || isguestuser()) {
+            return false;
+        }
+
+        try {
+            return has_capability('local/zoomchat:chat', context_system::instance());
+        } catch (Throwable $e) {
+            return false;
+        }
     }
 }

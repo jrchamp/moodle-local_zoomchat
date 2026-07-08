@@ -79,7 +79,7 @@ class get_users extends external_api {
             ];
         };
 
-        $conversations = zoomchat_helper::get_conversations_with_latest_message($USER);
+        $conversations = zoomchat_helper::get_conversations_with_latest_message();
         $users = [];
         $seen = [];
         foreach ($conversations as $conv) {

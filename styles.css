@@ -12,8 +12,8 @@
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background-color: #0d6efd;
-    color: #fff;
+    background-color: var(--bs-primary);
+    color: var(--bs-white);
     text-decoration: none;
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -22,12 +22,12 @@
 }
 
 #local-zoomchat-bubble:hover {
-    background-color: #0b5ed7;
-    color: #fff;
+    filter: brightness(0.9);
+    color: var(--bs-white);
 }
 
 #local-zoomchat-bubble:focus-visible {
-    outline: 2px solid #0d6efd;
+    outline: 2px solid var(--bs-primary);
     outline-offset: 2px;
 }
 
@@ -43,8 +43,8 @@
     min-width: 20px;
     height: 20px;
     border-radius: 10px;
-    background-color: #dc3545;
-    color: #fff;
+    background-color: var(--bs-danger);
+    color: var(--bs-white);
     font-size: 11px;
     font-weight: 700;
     line-height: 20px;
@@ -73,7 +73,7 @@
 
 /* Left panel — conversation list */
 #local-zoomchat-convlist {
-    border-right: 1px solid #dee2e6;
+    border-right: 1px solid var(--bs-border-color);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -83,7 +83,7 @@
     padding: 12px 12px 8px;
     font-weight: 600;
     font-size: 14px;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid var(--bs-border-color);
     flex-shrink: 0;
 }
 
@@ -98,21 +98,21 @@
     gap: 10px;
     padding: 10px 12px;
     cursor: pointer;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--bs-gray-200);
     transition: background-color 0.1s;
 }
 
 .local-zoomchat-conv-item:hover {
-    background-color: #f8f9fa;
+    background-color: var(--bs-gray-100);
 }
 
 .local-zoomchat-conv-item:focus-visible {
-    outline: 2px solid #0d6efd;
+    outline: 2px solid var(--bs-primary);
     outline-offset: -2px;
 }
 
 .local-zoomchat-conv-item.active {
-    background-color: #e9ecef;
+    background-color: var(--bs-gray-200);
 }
 
 .local-zoomchat-conv-item .local-zoomchat-conv-avatar {
@@ -130,6 +130,7 @@
     height: 36px;
     border-radius: 50%;
     object-fit: cover;
+    margin: 0;
 }
 
 .local-zoomchat-conv-item .local-zoomchat-conv-info {
@@ -148,7 +149,7 @@
 
 .local-zoomchat-conv-item .local-zoomchat-conv-preview {
     font-size: 12px;
-    color: #6c757d;
+    color: var(--bs-secondary-color);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -162,13 +163,13 @@
 
 .local-zoomchat-conv-item .local-zoomchat-conv-time {
     font-size: 10px;
-    color: #adb5bd;
+    color: var(--bs-gray-500);
 }
 
 .local-zoomchat-conv-item .local-zoomchat-conv-unread {
     display: none;
-    background-color: #dc3545;
-    color: #fff;
+    background-color: var(--bs-danger);
+    color: var(--bs-white);
     font-size: 10px;
     font-weight: 700;
     min-width: 18px;
@@ -197,7 +198,7 @@
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid var(--bs-border-color);
     flex-shrink: 0;
     font-weight: 600;
     font-size: 14px;
@@ -255,7 +256,7 @@
 }
 
 #local-zoomchat-chat .local-zoomchat-bubble {
-    background: #f1f3f5;
+    background: var(--bs-gray-300);
     border-radius: 12px 12px 12px 4px;
     padding: 8px 14px;
     word-wrap: break-word;
@@ -269,13 +270,13 @@
 }
 
 #local-zoomchat-chat .local-zoomchat-msg-mine .local-zoomchat-bubble {
-    background: #0d6efd;
-    color: #fff;
+    background: var(--bs-primary);
+    color: var(--bs-white);
 }
 
 #local-zoomchat-chat .local-zoomchat-msg-time {
     font-size: 10px;
-    color: #6c757d;
+    color: var(--bs-secondary-color);
     margin-top: 2px;
     text-align: right;
 }
@@ -285,7 +286,7 @@
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
-    border-top: 1px solid #dee2e6;
+    border-top: 1px solid var(--bs-border-color);
     flex-shrink: 0;
 }
 
@@ -298,7 +299,7 @@
 
 #local-zoomchat-message-input {
     width: 100%;
-    border: 1px solid #ced4da;
+    border: 1px solid var(--bs-gray-400);
     border-radius: 4px;
     padding: 8px 12px;
     font-size: 14px;
@@ -306,9 +307,9 @@
 }
 
 #local-zoomchat-message-input:focus {
-    border-color: #86b7fe;
+    border-color: rgba(var(--bs-primary-rgb), 0.5);
     outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
 }
 
 #local-zoomchat-chat .local-zoomchat-btn {
@@ -359,21 +360,21 @@
 .local-zoomchat-toast-container .local-zoomchat-toast {
     width: 100%;
     cursor: pointer;
-    background: #fff;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color-translucent);
     border-radius: 0.375rem;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    box-shadow: var(--bs-box-shadow);
     overflow: hidden;
     transition: opacity 0.3s;
 }
 
 .local-zoomchat-toast-container .local-zoomchat-toast:hover {
-    box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.2);
+    box-shadow: var(--bs-box-shadow-lg);
 }
 
 .local-zoomchat-toast-container .local-zoomchat-toast .toast-header {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    background: #fff;
+    border-bottom: 1px solid var(--bs-border-color);
+    background: var(--bs-body-bg);
     padding: 6px 10px;
     display: flex;
     align-items: center;
@@ -382,7 +383,7 @@
 
 .local-zoomchat-toast-container .local-zoomchat-toast .toast-body {
     padding: 8px 10px;
-    color: #495057;
+    color: var(--bs-body-color);
     font-size: 13px;
 }
 
@@ -392,7 +393,7 @@
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: #6c757d;
+    color: var(--bs-secondary-color);
     font-style: italic;
     padding: 20px;
 }
@@ -402,6 +403,6 @@
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: #6c757d;
+    color: var(--bs-secondary-color);
     padding: 20px;
 }

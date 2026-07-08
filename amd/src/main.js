@@ -610,6 +610,12 @@ const handleRealtimeEvent = (eventData) => {
     }
 
     if (selectedPartnerId && Number(payload.from_userid) === Number(selectedPartnerId)) {
+        const existing = messagesList.querySelector(
+            '[data-messageid="' + payload.messageid + '"]'
+        );
+        if (existing) {
+            return;
+        }
         renderMessage({
             id: payload.messageid,
             message: payload.message,

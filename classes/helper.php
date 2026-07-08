@@ -432,15 +432,23 @@ class helper {
         string $messagetext,
         int $timestamp,
         ?string $zoommessageid = null
-    ): int {
+    ): array {
         if ($zoommessageid !== null) {
             $existing = self::get_message_by_zoom_id($zoommessageid);
             if ($existing !== null) {
-                return (int) $existing->id;
+                return ['messageid' => (int) $existing->id, 'new' => false];
             }
         }
 
-        return self::store_message($fromzoomid, $tozoomid, $channelid, $messagetext, $timestamp, $zoommessageid);
+        $messageid = self::store_message(
+            $fromzoomid,
+            $tozoomid,
+            $channelid,
+            $messagetext,
+            $timestamp,
+            $zoommessageid
+        );
+        return ['messageid' => $messageid, 'new' => true];
     }
 
     /**

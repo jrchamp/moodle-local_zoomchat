@@ -233,7 +233,7 @@ class webhook {
             $channelid = $object['channel_id'] ?? null;
         }
 
-        $messageid = helper::receive_message_from_zoom(
+        $result = helper::receive_message_from_zoom(
             $fromzoomid,
             $tozoomid,
             $channelid,
@@ -241,14 +241,14 @@ class webhook {
             $timestamp,
             $zoommessageid
         );
-        if (!$messageid) {
+        if (!$result['messageid']) {
             debugging('Zoom webhook: failed to store message', DEBUG_DEVELOPER);
             return;
         }
 
-        if ($tozoomid !== null) {
+        if ($tozoomid !== null && $result['new']) {
             $sanitizedtext = format_text($messagetext, FORMAT_MOODLE, ['context' => context_system::instance()]);
-            self::publish_realtime_notification($fromzoomid, $tozoomid, $messageid, $sanitizedtext, $timestamp);
+            self::publish_realtime_notification($fromzoomid, $tozoomid, $result['messageid'], $sanitizedtext, $timestamp);
         }
     }
 
@@ -285,7 +285,7 @@ class webhook {
             $channelid,
             $timestamp
         );
-        if ($result && $tozoomid !== null) {
+        if ($result && $tozoomid !== null && $result['new']) {
             $sanitized = format_text($result['filehtml'], FORMAT_MOODLE, ['context' => context_system::instance()]);
             self::publish_realtime_notification($fromzoomid, $tozoomid, $result['messageid'], $sanitized, $timestamp);
         }
@@ -332,10 +332,10 @@ class webhook {
         $inlinefiles = $object['files'] ?? [];
 
         if (empty($inlinefiles)) {
-            $messageid = helper::receive_message_from_zoom($fromzoomid, $tozoomid, null, $messagetext, $timestamp, $zoommessageid);
-            if ($messageid && $tozoomid !== null) {
+            $result = helper::receive_message_from_zoom($fromzoomid, $tozoomid, null, $messagetext, $timestamp, $zoommessageid);
+            if ($result['messageid'] && $tozoomid !== null && $result['new']) {
                 $sanitizedtext = format_text($messagetext, FORMAT_MOODLE, ['context' => context_system::instance()]);
-                self::publish_realtime_notification($fromzoomid, $tozoomid, $messageid, $sanitizedtext, $timestamp);
+                self::publish_realtime_notification($fromzoomid, $tozoomid, $result['messageid'], $sanitizedtext, $timestamp);
             }
             return;
         }
@@ -349,7 +349,7 @@ class webhook {
             $zoommessageid,
             $messagetext
         );
-        if ($result && $tozoomid !== null) {
+        if ($result && $tozoomid !== null && $result['new']) {
             $sanitized = format_text($result['filehtml'], FORMAT_MOODLE, ['context' => context_system::instance()]);
             self::publish_realtime_notification($fromzoomid, $tozoomid, $result['messageid'], $sanitized, $timestamp);
         }
@@ -650,8 +650,8 @@ class webhook {
             $filehtml = $messagetext . $filehtml;
         }
 
-        $messageid = helper::receive_message_from_zoom($fromzoomid, $tozoomid, $channelid, $filehtml, $timestamp, $zoommessageid);
-        if (!$messageid) {
+        $stored = helper::receive_message_from_zoom($fromzoomid, $tozoomid, $channelid, $filehtml, $timestamp, $zoommessageid);
+        if (!$stored['messageid']) {
             return null;
         }
 
@@ -667,7 +667,7 @@ class webhook {
                 );
                 foreach ($filerecs as $file) {
                     $record = new stdClass();
-                    $record->messageid = $messageid;
+                    $record->messageid = $stored['messageid'];
                     $record->itemid = $itemid;
                     $record->filename = $file->get_filename();
                     $DB->insert_record('local_zoomchat_message_files', $record);
@@ -675,7 +675,7 @@ class webhook {
             }
         }
 
-        return ['messageid' => $messageid, 'filehtml' => $filehtml];
+        return ['messageid' => $stored['messageid'], 'filehtml' => $filehtml, 'new' => $stored['new']];
     }
 
     /**

@@ -216,7 +216,7 @@ class helper {
      * @param string $messagetext The message content (may contain <img> tags).
      * @param string $fileitemids Comma-separated Moodle file itemids to attach.
      * @param int $contextid The context ID where attachments are stored.
-     * @return int|false The message ID, or false on failure.
+     * @return array Array with 'success' bool and optionally 'error' string and 'messageid' int.
      */
     public static function send_message_to_zoom(
         stdClass $sender,
@@ -224,17 +224,17 @@ class helper {
         string $messagetext,
         string $fileitemids = '',
         int $contextid = 0
-    ) {
+    ): array {
         $senderzoom = zoomapi_helper::get_user(zoomapi_helper::get_api_identifier($sender));
         if (empty($senderzoom) || empty($senderzoom['id'])) {
             debugging('Sender has no Zoom account', DEBUG_DEVELOPER);
-            return false;
+            return ['success' => false, 'error' => get_string('error:nosenderzoom', 'local_zoomchat')];
         }
 
         $recipientzoom = zoomapi_helper::get_user(zoomapi_helper::get_api_identifier($recipient));
         if (empty($recipientzoom) || empty($recipientzoom['email'])) {
             debugging('Recipient has no Zoom account', DEBUG_DEVELOPER);
-            return false;
+            return ['success' => false, 'error' => get_string('error:norecipientzoom', 'local_zoomchat')];
         }
 
         $zoomfileids = self::upload_files_to_zoom($senderzoom['id'], $fileitemids, $contextid);
@@ -256,7 +256,7 @@ class helper {
             $zoomresponse = api::instance()->create_user_message($senderzoom['id'], $zoompayload);
         } catch (moodle_exception $e) {
             debugging('Failed to send Zoom DM: ' . $e->getMessage(), DEBUG_DEVELOPER);
-            return false;
+            return ['success' => false, 'error' => $e->getMessage()];
         }
 
         $zoommessageid = $zoomresponse['id'] ?? null;
@@ -272,7 +272,7 @@ class helper {
 
         self::record_file_links($messageid, $fileitemids, $contextid);
 
-        return $messageid;
+        return ['success' => true, 'messageid' => $messageid];
     }
 
     /**

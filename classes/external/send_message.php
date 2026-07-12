@@ -86,7 +86,7 @@ class send_message extends external_api {
 
         session_manager::write_close();
 
-        $messageid = zoomchat_helper::send_message_to_zoom(
+        $result = zoomchat_helper::send_message_to_zoom(
             $USER,
             $recipient,
             $messagetext,
@@ -94,9 +94,9 @@ class send_message extends external_api {
             context_system::instance()->id
         );
 
-        if ($messageid) {
+        if ($result['success']) {
             $notifydata = [
-                'messageid' => $messageid,
+                'messageid' => $result['messageid'],
                 'from_userid' => (int) $USER->id,
                 'message' => format_text($messagetext, FORMAT_MOODLE, ['context' => context_system::instance()]),
                 'timestamp' => di::get(clock::class)->time(),
@@ -110,10 +110,10 @@ class send_message extends external_api {
                 $e->getMessage();
             }
 
-            return ['success' => true, 'messageid' => $messageid];
+            return ['success' => true, 'messageid' => $result['messageid']];
         }
 
-        return ['success' => false];
+        return ['success' => false, 'error' => $result['error'] ?? ''];
     }
 
     /**
@@ -125,6 +125,7 @@ class send_message extends external_api {
         return new external_single_structure([
             'success' => new external_value(PARAM_BOOL, 'Whether the message was sent'),
             'messageid' => new external_value(PARAM_INT, 'The new message ID', VALUE_OPTIONAL),
+            'error' => new external_value(PARAM_RAW, 'Error message if sending failed', VALUE_OPTIONAL),
         ]);
     }
 }

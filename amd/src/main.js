@@ -509,7 +509,7 @@ const sendMessage = async() => {
             renderAttachmentPreviews();
             loadNewMessages(selectedPartnerId);
         } else {
-            Notification.alert(strError, strErrorSend);
+            Notification.alert(strError, data.error || strErrorSend);
         }
     } catch (ex) {
         Notification.alert(strError, strErrorSend);

@@ -244,10 +244,8 @@ class helper {
 
         $zoompayload = [
             'to_contact' => $recipientzoom['email'],
+            'message' => $zoomtext,
         ];
-        if ($zoomtext !== '') {
-            $zoompayload['message'] = $zoomtext;
-        }
         if (!empty($zoomfileids)) {
             $zoompayload['file_ids'] = $zoomfileids;
         }

@@ -33,6 +33,25 @@ use tool_zoomapi\api as zoomapi_base;
  */
 class api extends zoomapi_base {
     /**
+     * Get the minimum set of required OAuth scopes for this plugin.
+     *
+     * @param string $type Scope type (granular or classic).
+     * @return string[]
+     */
+    public static function required_scopes($type = '') {
+        $parentscopes = parent::required_scopes($type);
+
+        $chatscopes = [
+            'team_chat:write:user_message:admin',
+            'team_chat:read:file:admin',
+            'team_chat:write:files:admin',
+            'user:read:user:admin',
+        ];
+
+        return array_merge($parentscopes, $chatscopes);
+    }
+
+    /**
      * Send a chat message via the Zoom API.
      *
      * @param string $userid Zoom user ID of the sender.

@@ -103,6 +103,10 @@ class helper {
 
         $conversations = [];
         foreach ($records as $record) {
+            if ($record->partner_zoom_id === $zoomid) {
+                continue;
+            }
+
             $partnerzoom = zoomapi_helper::get_user($record->partner_zoom_id);
             if (empty($partnerzoom) || empty($partnerzoom['email'])) {
                 continue;

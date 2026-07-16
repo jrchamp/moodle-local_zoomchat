@@ -281,15 +281,17 @@ class webhook {
             $channelid = $object['channel_id'] ?? null;
         }
 
+        $zoommessageid = $object['message_id'] ?? null;
         $timestamp = self::extract_timestamp($payload);
         $result = self::download_and_store_files(
             $files,
             $fromzoomid,
             $tozoomid,
             $channelid,
-            $timestamp
+            $timestamp,
+            $zoommessageid
         );
-        if ($result && $tozoomid !== null && $result['new']) {
+        if ($result && $result['messageid'] && $tozoomid !== null) {
             $sanitized = format_text($result['filehtml'], FORMAT_MOODLE, ['context' => context_system::instance()]);
             self::publish_notification($fromzoomid, $tozoomid, $result['messageid'], $sanitized, $timestamp);
         }
@@ -453,8 +455,7 @@ class webhook {
                 $stored->to_zoom_id,
                 (int) $stored->id,
                 $sanitized,
-                $timestamp,
-                true
+                $timestamp
             );
         }
     }
@@ -488,8 +489,7 @@ class webhook {
                 $stored->to_zoom_id,
                 (int) $stored->id,
                 $sanitized,
-                $timestamp,
-                true
+                $timestamp
             );
         }
     }
@@ -654,6 +654,14 @@ class webhook {
             return null;
         }
 
+        if (!$stored['new'] && $filehtml !== '') {
+            $existing = $DB->get_record('local_zoomchat_messages', ['id' => $stored['messageid']]);
+            if ($existing && strpos($existing->message, $filehtml) === false) {
+                $existing->message .= $filehtml;
+                $DB->update_record('local_zoomchat_messages', $existing);
+            }
+        }
+
         foreach ($fileitemids as $itemid) {
             $filerecs = $fs->get_area_files(
                 $context->id,
@@ -683,15 +691,13 @@ class webhook {
      * @param int $messageid The local message ID.
      * @param string $messagetext The message text (with embedded file HTML).
      * @param int $timestamp The message timestamp.
-     * @param bool $updated Is the notification for an updated message?
      */
     private static function publish_notification(
         string $fromzoomid,
         string $tozoomid,
         int $messageid,
         string $messagetext,
-        int $timestamp,
-        bool $updated = false
+        int $timestamp
     ): void {
         global $DB;
 
@@ -723,9 +729,6 @@ class webhook {
             'timestamp' => (int) $timestamp,
             'sender_name' => $sendername,
         ];
-        if ($updated) {
-            $pubdata['updated'] = true;
-        }
 
         helper::notify_user($recipientid, $pubdata);
         if ($senderid > 0) {

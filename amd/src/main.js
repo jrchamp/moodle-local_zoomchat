@@ -596,26 +596,20 @@ const handleRealtimeEvent = (eventData) => {
         return;
     }
 
-    if (payload.updated) {
-        const existing = messagesList.querySelector(
-            '[data-messageid="' + payload.messageid + '"]'
-        );
-        if (existing) {
-            const bubble = existing.querySelector('.local-zoomchat-bubble');
-            if (bubble) {
-                bubble.innerHTML = payload.message;
-            }
+    const existing = messagesList.querySelector(
+        '[data-messageid="' + payload.messageid + '"]'
+    );
+    if (existing) {
+        const bubble = existing.querySelector('.local-zoomchat-bubble');
+        if (bubble) {
+            bubble.innerHTML = payload.message;
         }
+        scrollMessagesDown();
+        clearUnreadForPartner(payload.from_userid);
         return;
     }
 
     if (selectedPartnerId && Number(payload.from_userid) === Number(selectedPartnerId)) {
-        const existing = messagesList.querySelector(
-            '[data-messageid="' + payload.messageid + '"]'
-        );
-        if (existing) {
-            return;
-        }
         renderMessage({
             id: payload.messageid,
             message: payload.message,

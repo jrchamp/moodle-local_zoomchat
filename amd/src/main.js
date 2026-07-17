@@ -23,6 +23,7 @@
 
 import {call as fetchMany} from 'core/ajax';
 import Modal from 'core/modal';
+import ModalEvents from 'core/modal_events';
 import Notification from 'core/notification';
 import {getStrings} from 'core/str';
 import * as PubSub from 'core/pubsub';
@@ -247,12 +248,12 @@ const createModal = async() => {
     backBtn = root.querySelector('.local-zoomchat-back-btn');
     previewContainer = root.querySelector('#local-zoomchat-attachment-previews');
 
-    const modalDialog = modalInstance.getModal()[0];
-    modalDialog.addEventListener('core/modal:shown', () => {
+    const modalRoot = modalInstance.getRoot();
+    modalRoot.on(ModalEvents.shown, () => {
         loadConversations();
     });
 
-    modalDialog.addEventListener('core/modal:hidden', () => {
+    modalRoot.on(ModalEvents.hidden, () => {
         selectedPartnerId = null;
         backBtn.style.display = 'none';
         bubble.focus();

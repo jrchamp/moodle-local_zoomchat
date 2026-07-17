@@ -699,7 +699,7 @@ class webhook {
         string $messagetext,
         int $timestamp
     ): void {
-        global $DB;
+        global $DB, $OUTPUT;
 
         $recipientzoom = zoomapi_helper::get_user($tozoomid);
         if (empty($recipientzoom) || empty($recipientzoom['email'])) {
@@ -711,11 +711,15 @@ class webhook {
         }
 
         $senderuserid = 0;
+        $senderpicture = '';
         $senderzoom = zoomapi_helper::get_user($fromzoomid);
         if (!empty($senderzoom) && !empty($senderzoom['email'])) {
             $senderuser = $DB->get_record('user', ['email' => $senderzoom['email'], 'deleted' => 0]);
             $sendername = $senderuser ? fullname($senderuser) : ($senderzoom['first_name'] . ' ' . $senderzoom['last_name']);
             $senderuserid = $senderuser->id ?? 0;
+            if ($senderuser) {
+                $senderpicture = $OUTPUT->user_picture($senderuser, ['size' => 36, 'link' => false]);
+            }
         } else {
             $sendername = get_string('unknownuser', 'local_zoomchat');
         }
@@ -728,6 +732,7 @@ class webhook {
             'message' => $messagetext,
             'timestamp' => (int) $timestamp,
             'sender_name' => $sendername,
+            'sender_picture' => $senderpicture,
         ];
 
         helper::notify_user($recipientid, $pubdata);

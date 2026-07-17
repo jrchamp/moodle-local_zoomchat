@@ -320,6 +320,43 @@ const showConversationList = () => {
 
 // --- Conversations ---
 
+const createConvItem = (user) => {
+    const item = document.createElement('div');
+    item.className = 'local-zoomchat-conv-item' +
+        ((user.unreadcount || 0) > 0 ? ' local-zoomchat-has-unread' : '');
+    item.dataset.userid = user.id;
+    item.setAttribute('role', 'button');
+    item.setAttribute('tabindex', '0');
+    item.setAttribute('aria-label', user.name);
+
+    const preview = stripHtml(user.lastmessage || '').substring(0, 60);
+
+    item.innerHTML =
+        '<div class="local-zoomchat-conv-avatar">' + (user.picture || '') + '</div>' +
+        '<div class="local-zoomchat-conv-info">' +
+        '<span class="local-zoomchat-conv-name">' + escapeHtml(user.name) + '</span>' +
+        '<span class="local-zoomchat-conv-preview">' + escapeHtml(preview) + '</span>' +
+        '</div>' +
+        '<div class="local-zoomchat-conv-meta">' +
+        (user.lastmessagetime
+            ? '<div class="local-zoomchat-conv-time">'
+            + formatRelativeTime(user.lastmessagetime)
+            + '</div>'
+            : '') +
+        '<div class="local-zoomchat-conv-unread">' + (user.unreadcount || '') + '</div>' +
+        '</div>';
+
+    item.addEventListener('click', () => selectConversation(user.id, user.name));
+    item.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            selectConversation(user.id, user.name);
+        }
+    });
+
+    return item;
+};
+
 const loadConversations = async() => {
     convListEl.innerHTML = '<div class="local-zoomchat-loading">' + escapeHtml(strSending) + '</div>';
 
@@ -338,40 +375,7 @@ const loadConversations = async() => {
         }
 
         data.users.forEach((user) => {
-            const item = document.createElement('div');
-            item.className = 'local-zoomchat-conv-item' +
-                (user.unreadcount > 0 ? ' local-zoomchat-has-unread' : '');
-            item.dataset.userid = user.id;
-            item.setAttribute('role', 'button');
-            item.setAttribute('tabindex', '0');
-            item.setAttribute('aria-label', user.name);
-
-            const preview = stripHtml(user.lastmessage).substring(0, 60);
-
-            item.innerHTML =
-                '<div class="local-zoomchat-conv-avatar">' + (user.picture || '') + '</div>' +
-                '<div class="local-zoomchat-conv-info">' +
-                '<span class="local-zoomchat-conv-name">' + escapeHtml(user.name) + '</span>' +
-                '<span class="local-zoomchat-conv-preview">' + escapeHtml(preview) + '</span>' +
-                '</div>' +
-                '<div class="local-zoomchat-conv-meta">' +
-                (user.lastmessagetime
-                    ? '<div class="local-zoomchat-conv-time">'
-                    + formatRelativeTime(user.lastmessagetime)
-                    + '</div>'
-                    : '') +
-                '<div class="local-zoomchat-conv-unread">' + (user.unreadcount || '') + '</div>' +
-                '</div>';
-
-            item.addEventListener('click', () => selectConversation(user.id, user.name));
-            item.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    selectConversation(user.id, user.name);
-                }
-            });
-
-            convListEl.appendChild(item);
+            convListEl.appendChild(createConvItem(user));
         });
 
         if (selectedPartnerId) {
@@ -621,10 +625,18 @@ const handleRealtimeEvent = (eventData) => {
         clearUnreadForPartner(payload.from_userid);
     } else {
         showToast(payload);
-        const item = convListEl.querySelector(
+        let item = convListEl.querySelector(
             '[data-userid="' + payload.from_userid + '"]'
         );
-        if (item) {
+        if (!item) {
+            item = createConvItem({
+                id: payload.from_userid,
+                name: payload.sender_name || '',
+                picture: payload.sender_picture || '',
+                unreadcount: 1,
+            });
+            convListEl.prepend(item);
+        } else {
             const badge = item.querySelector('.local-zoomchat-conv-unread');
             if (badge) {
                 const current = parseInt(badge.textContent, 10) || 0;

@@ -29,5 +29,38 @@
  * @return bool
  */
 function xmldb_local_zoomchat_upgrade($oldversion) {
+    global $DB;
+
+    $dbman = $DB->get_manager();
+
+    if ($oldversion < 2026071701) {
+        $table = new xmldb_table('local_zoomchat_messages');
+
+        $duplicates = $DB->get_recordset_sql(
+            "SELECT MIN(id) AS keepid, zoom_message_id
+               FROM {local_zoomchat_messages}
+              WHERE zoom_message_id IS NOT NULL
+           GROUP BY zoom_message_id
+             HAVING COUNT(*) > 1"
+        );
+        foreach ($duplicates as $dup) {
+            $DB->delete_records_select(
+                'local_zoomchat_messages',
+                'zoom_message_id = ? AND id > ?',
+                [$dup->zoom_message_id, $dup->keepid]
+            );
+        }
+        $duplicates->close();
+
+        $index = new xmldb_index('zoom-message-id', XMLDB_INDEX_NOTUNIQUE, ['zoom_message_id']);
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+        $index = new xmldb_index('zoom-message-id', XMLDB_INDEX_UNIQUE, ['zoom_message_id']);
+        $dbman->add_index($table, $index);
+
+        upgrade_plugin_savepoint(true, 2026071701, 'local', 'zoomchat');
+    }
+
     return true;
 }

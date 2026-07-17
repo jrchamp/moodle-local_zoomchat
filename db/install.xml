@@ -23,7 +23,7 @@
         <INDEX NAME="to-zoom-id" UNIQUE="false" FIELDS="to_zoom_id"/>
         <INDEX NAME="channel-id" UNIQUE="false" FIELDS="channel_id"/>
         <INDEX NAME="timestamp" UNIQUE="false" FIELDS="timestamp"/>
-        <INDEX NAME="zoom-message-id" UNIQUE="false" FIELDS="zoom_message_id"/>
+        <INDEX NAME="zoom-message-id" UNIQUE="true" FIELDS="zoom_message_id"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="local_zoomchat_message_files" COMMENT="Links uploaded file itemids to their parent message for access control">

@@ -29,6 +29,7 @@ use core\context\course as context_course;
 use core\context\system as context_system;
 use core\di;
 use core\exception\moodle_exception;
+use dml_write_exception;
 use stdClass;
 use Throwable;
 use tool_realtime\channel;
@@ -441,15 +442,25 @@ class helper {
             }
         }
 
-        $messageid = self::store_message(
-            $fromzoomid,
-            $tozoomid,
-            $channelid,
-            $messagetext,
-            $timestamp,
-            $zoommessageid
-        );
-        return ['messageid' => $messageid, 'new' => true];
+        try {
+            $messageid = self::store_message(
+                $fromzoomid,
+                $tozoomid,
+                $channelid,
+                $messagetext,
+                $timestamp,
+                $zoommessageid
+            );
+            return ['messageid' => $messageid, 'new' => true];
+        } catch (dml_write_exception $e) {
+            if ($zoommessageid !== null) {
+                $existing = self::get_message_by_zoom_id($zoommessageid);
+                if ($existing !== null) {
+                    return ['messageid' => (int) $existing->id, 'new' => false];
+                }
+            }
+            throw $e;
+        }
     }
 
     /**

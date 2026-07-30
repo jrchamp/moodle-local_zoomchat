@@ -11,7 +11,7 @@ jobs:
 
     services:
       postgres:
-        image: ${{ matrix.database == 'pgsql' && 'postgres:16' || '' }}
+        image: ${{ matrix.database == 'pgsql' && 'postgres:17' || '' }}
         env:
           POSTGRES_USER: 'postgres'
           POSTGRES_HOST_AUTH_METHOD: 'trust'

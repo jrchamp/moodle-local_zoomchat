@@ -1,0 +1,61 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_zoomchat/conv_item
+
+    Conversation list item showing a contact's avatar, name, and last message preview.
+
+    Classes required for JS:
+    * local-zoomchat-conv-item
+
+    Data attributes required for JS:
+    * data-userid
+
+    Context variables required for this template:
+    * id number User ID
+    * name string User full name
+    * picture string Raw HTML of the user picture
+    * preview string Last message preview text
+    * lastmessagetime string Relative time of the last message
+    * unreadcount number Count of unread messages
+    * hasunread boolean Whether there are unread messages
+
+    Example context (json):
+    {
+        "id": 42,
+        "name": "John Doe",
+        "picture": "<img src=\"https://example.com/pix/u/f1.png\" class=\"userpicture\" alt=\"\">",
+        "preview": "Hello, how are you?",
+        "lastmessagetime": "2m",
+        "unreadcount": 3,
+        "hasunread": true
+    }
+}}
+<div class="local-zoomchat-conv-item{{#hasunread}} local-zoomchat-has-unread{{/hasunread}}"
+     data-userid="{{id}}" role="button" tabindex="0" aria-label="{{name}}">
+    <div class="local-zoomchat-conv-avatar">{{{picture}}}</div>
+    <div class="local-zoomchat-conv-info">
+        <span class="local-zoomchat-conv-name">{{name}}</span>
+        <span class="local-zoomchat-conv-preview">{{preview}}</span>
+    </div>
+    <div class="local-zoomchat-conv-meta">
+        {{#lastmessagetime}}
+        <div class="local-zoomchat-conv-time">{{lastmessagetime}}</div>
+        {{/lastmessagetime}}
+        {{#unreadcount}}<div class="local-zoomchat-conv-unread">{{unreadcount}}</div>{{/unreadcount}}
+    </div>
+</div>

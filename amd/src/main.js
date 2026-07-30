@@ -26,16 +26,13 @@ import Modal from 'core/modal';
 import ModalEvents from 'core/modal_events';
 import Notification from 'core/notification';
 import {getStrings} from 'core/str';
+import Templates from 'core/templates';
 import * as PubSub from 'core/pubsub';
 import * as RealTimeEvents from 'tool_realtime/events';
 
 let config = null;
-let strNoconversations = '';
-let strMessage = '';
-let strSend = '';
-let strEnter = '';
 let strSelect = '';
-let strAttach = '';
+let strSend = '';
 let strSending = '';
 let strError = '';
 let strErrorLoad = '';
@@ -44,8 +41,6 @@ let strUnknown = '';
 let strImage = '';
 let strFile = '';
 let strNew = '';
-let strClose = '';
-let strRemove = '';
 let strZoomchat = '';
 
 let bubble = null;
@@ -68,12 +63,6 @@ let realtimeConnected = true;
 let pollTimer = null;
 
 const uploadUrl = M.cfg.wwwroot + '/local/zoomchat/ajax.php';
-
-const escapeHtml = (str) => {
-    const el = document.createElement('span');
-    el.textContent = str;
-    return el.innerHTML;
-};
 
 const getTimeStr = (ts) => {
     const time = new Date(ts * 1000);
@@ -139,8 +128,7 @@ const createToastContainer = () => {
     document.body.appendChild(toastContainer);
 };
 
-const showToast = (payload) => {
-    const sender = payload.sender_name || strUnknown;
+const showToast = async(payload) => {
     const raw = payload.message || '';
     const stripped = stripHtml(raw).trim();
     let preview = stripped.substring(0, 120);
@@ -154,18 +142,15 @@ const showToast = (payload) => {
         }
     }
 
-    const toast = document.createElement('div');
-    toast.className = 'local-zoomchat-toast';
-    toast.setAttribute('role', 'alert');
-    toast.innerHTML =
-        '<div class="toast-header">' +
-        '<strong class="me-auto">' + escapeHtml(sender) + '</strong>' +
-        '<small class="text-muted ms-2">' +
-        formatRelativeTime(payload.timestamp || Math.floor(Date.now() / 1000)) +
-        '</small>' +
-        '<button type="button" class="btn-close" data-dismiss="toast" aria-label="' + strClose + '"></button>' +
-        '</div>' +
-        '<div class="toast-body text-break">' + escapeHtml(preview) + '</div>';
+    const html = await Templates.render('local_zoomchat/toast', {
+        fromuserid: payload.from_userid,
+        sendername: payload.sender_name || strUnknown,
+        preview: preview,
+        timestamp: formatRelativeTime(payload.timestamp || Math.floor(Date.now() / 1000)),
+    });
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html;
+    const toast = wrapper.firstElementChild;
 
     toast.addEventListener('click', (e) => {
         if (e.target.closest('.btn-close')) {
@@ -186,47 +171,13 @@ const showToast = (payload) => {
     }, 6000);
 };
 
-// --- Modal body HTML ---
-
-const buildModalBody = () => {
-    return '<div id="local-zoomchat-modal-body">' +
-        '<div id="local-zoomchat-convlist">' +
-        '<div class="local-zoomchat-convlist-header">' + escapeHtml(strMessage) + '</div>' +
-        '<div class="local-zoomchat-convlist-items"></div>' +
-        '</div>' +
-        '<div id="local-zoomchat-chat">' +
-        '<div class="local-zoomchat-chat-header">' +
-        '<button class="local-zoomchat-back-btn" aria-label="' + strClose + '">&larr;</button>' +
-        '<span class="local-zoomchat-chat-partner-name">' + escapeHtml(strSelect) + '</span>' +
-        '</div>' +
-        '<div class="local-zoomchat-messages-container">' +
-        '<div class="local-zoomchat-empty">' + escapeHtml(strSelect) + '</div>' +
-        '<ul id="local-zoomchat-messages-list"></ul>' +
-        '</div>' +
-        '<div class="local-zoomchat-input-area">' +
-        '<div class="local-zoomchat-input-wrapper">' +
-        '<div id="local-zoomchat-attachment-previews"></div>' +
-        '<textarea id="local-zoomchat-message-input" rows="1" placeholder="' +
-        escapeHtml(strEnter) + '" disabled></textarea>' +
-        '</div>' +
-        '<div id="local-zoomchat-input-actions">' +
-        '<input type="file" id="local-zoomchat-file-input" accept="image/*" hidden>' +
-        '<button type="button" id="local-zoomchat-attach-btn" class="btn btn-outline-secondary btn-sm local-zoomchat-btn" ' +
-        'title="' + escapeHtml(strAttach) + '" disabled>📎</button>' +
-        '<button type="button" id="local-zoomchat-send-btn" class="btn btn-primary btn-sm local-zoomchat-btn" disabled>' +
-        escapeHtml(strSend) + '</button>' +
-        '</div>' +
-        '</div>' +
-        '</div>' +
-        '</div>';
-};
-
 // --- Modal ---
 
 const createModal = async() => {
+    const bodyHtml = await Templates.render('local_zoomchat/modal_body', {});
     modalInstance = await Modal.create({
         title: strZoomchat,
-        body: buildModalBody(),
+        body: bodyHtml,
         large: true,
         show: false,
         removeOnClose: false,
@@ -320,32 +271,20 @@ const showConversationList = () => {
 
 // --- Conversations ---
 
-const createConvItem = (user) => {
-    const item = document.createElement('div');
-    item.className = 'local-zoomchat-conv-item' +
-        ((user.unreadcount || 0) > 0 ? ' local-zoomchat-has-unread' : '');
-    item.dataset.userid = user.id;
-    item.setAttribute('role', 'button');
-    item.setAttribute('tabindex', '0');
-    item.setAttribute('aria-label', user.name);
-
+const createConvItem = async(user) => {
     const preview = stripHtml(user.lastmessage || '').substring(0, 60);
-
-    item.innerHTML =
-        '<div class="local-zoomchat-conv-avatar">' + (user.picture || '') + '</div>' +
-        '<div class="local-zoomchat-conv-info">' +
-        '<span class="local-zoomchat-conv-name">' + escapeHtml(user.name) + '</span>' +
-        '<span class="local-zoomchat-conv-preview">' + escapeHtml(preview) + '</span>' +
-        '</div>' +
-        '<div class="local-zoomchat-conv-meta">' +
-        (user.lastmessagetime
-            ? '<div class="local-zoomchat-conv-time">'
-            + formatRelativeTime(user.lastmessagetime)
-            + '</div>'
-            : '') +
-        '<div class="local-zoomchat-conv-unread">' + (user.unreadcount || '') + '</div>' +
-        '</div>';
-
+    const html = await Templates.render('local_zoomchat/conv_item', {
+        id: user.id,
+        name: user.name,
+        picture: user.picture || '',
+        preview: preview,
+        lastmessagetime: user.lastmessagetime ? formatRelativeTime(user.lastmessagetime) : '',
+        unreadcount: user.unreadcount || 0,
+        hasunread: (user.unreadcount || 0) > 0,
+    });
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html;
+    const item = wrapper.firstElementChild;
     item.addEventListener('click', () => selectConversation(user.id, user.name));
     item.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -358,7 +297,8 @@ const createConvItem = (user) => {
 };
 
 const loadConversations = async() => {
-    convListEl.innerHTML = '<div class="local-zoomchat-loading">' + escapeHtml(strSending) + '</div>';
+    const loadingHtml = await Templates.render('local_zoomchat/conv_list_state', {loading: true});
+    convListEl.innerHTML = loadingHtml;
 
     try {
         const data = await fetchMany([{
@@ -369,14 +309,16 @@ const loadConversations = async() => {
         convListEl.innerHTML = '';
 
         if (!data.users || data.users.length === 0) {
-            convListEl.innerHTML = '<div class="local-zoomchat-empty">' +
-                escapeHtml(strNoconversations) + '</div>';
+            const emptyHtml = await Templates.render('local_zoomchat/conv_list_state', {
+                loading: false,
+                message: 'No conversations yet',
+            });
+            convListEl.innerHTML = emptyHtml;
             return;
         }
 
-        data.users.forEach((user) => {
-            convListEl.appendChild(createConvItem(user));
-        });
+        const items = await Promise.all(data.users.map((user) => createConvItem(user)));
+        items.forEach((item) => convListEl.appendChild(item));
 
         if (selectedPartnerId) {
             selectConversation(selectedPartnerId, '');
@@ -384,8 +326,11 @@ const loadConversations = async() => {
             selectConversation(data.users[0].id, data.users[0].name);
         }
     } catch (ex) {
-        convListEl.innerHTML = '<div class="local-zoomchat-empty">' +
-            escapeHtml(strErrorLoad) + '</div>';
+        const errorHtml = await Templates.render('local_zoomchat/conv_list_state', {
+            loading: false,
+            message: strErrorLoad,
+        });
+        convListEl.innerHTML = errorHtml;
     }
 };
 
@@ -408,7 +353,7 @@ const selectConversation = (partnerId, partnerName) => {
     messageInput.focus();
 
     if (partnerName) {
-        convHeader.textContent = escapeHtml(partnerName);
+        convHeader.textContent = partnerName;
     }
 
     loadMessages(partnerId, 0);
@@ -426,7 +371,9 @@ const loadMessages = async(partnerId, since) => {
         }])[0];
 
         if (data.messages) {
-            data.messages.forEach((msg) => renderMessage(msg));
+            for (const msg of data.messages) {
+                await renderMessage(msg);
+            }
             scrollMessagesDown();
         }
     } catch (ex) {
@@ -444,20 +391,15 @@ const loadNewMessages = (partnerId) => {
     loadMessages(partnerId, lasttime);
 };
 
-const renderMessage = (msg) => {
-    const li = document.createElement('li');
-    li.className = 'local-zoomchat-msg' +
-        (msg.mymessage ? ' local-zoomchat-msg-mine' : ' local-zoomchat-msg-theirs');
-    if (msg.id) {
-        li.dataset.messageid = msg.id;
-    }
-    if (msg.timestamp) {
-        li.dataset.timestamp = msg.timestamp;
-    }
-    li.innerHTML =
-        '<div class="local-zoomchat-bubble">' + msg.message + '</div>' +
-        '<div class="local-zoomchat-msg-time">' + getTimeStr(msg.timestamp) + '</div>';
-    messagesList.appendChild(li);
+const renderMessage = async(msg) => {
+    const html = await Templates.render('local_zoomchat/message', {
+        id: msg.id,
+        message: msg.message,
+        timestamp: msg.timestamp,
+        timestampformatted: getTimeStr(msg.timestamp),
+        mymessage: msg.mymessage,
+    });
+    messagesList.insertAdjacentHTML('beforeend', html);
 
     const empty = chatEl.querySelector('.local-zoomchat-empty');
     if (empty) {
@@ -551,31 +493,37 @@ const uploadImage = async(file) => {
     }
 };
 
-const renderAttachmentPreviews = () => {
+const removeAttachment = (e) => {
+    const btn = e.target.closest('.local-zoomchat-attach-remove');
+    if (!btn) {
+        return;
+    }
+    const idx = parseInt(btn.dataset.idx, 10);
+    if (!isNaN(idx) && idx >= 0 && idx < pendingAttachments.length) {
+        pendingAttachments.splice(idx, 1);
+        renderAttachmentPreviews();
+    }
+};
+
+const renderAttachmentPreviews = async() => {
     previewContainer.innerHTML = '';
-    pendingAttachments.forEach((att) => {
-        const thumb = document.createElement('span');
-        thumb.className = 'd-inline-block border rounded overflow-hidden position-relative local-zoomchat-attach-thumb';
-        thumb.innerHTML = att.html;
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.className = 'btn-close position-absolute top-0 end-0 m-1 local-zoomchat-attach-remove';
-        removeBtn.setAttribute('aria-label', strRemove);
-        removeBtn.addEventListener('click', () => {
-            const idx = pendingAttachments.indexOf(att);
-            if (idx !== -1) {
-                pendingAttachments.splice(idx, 1);
-                renderAttachmentPreviews();
-            }
+    previewContainer.removeEventListener('click', removeAttachment);
+    const atts = pendingAttachments.slice();
+    for (let i = 0; i < atts.length; i++) {
+        const html = await Templates.render('local_zoomchat/attachment_preview', {
+            html: atts[i].html,
+            idx: i,
         });
-        thumb.appendChild(removeBtn);
-        previewContainer.appendChild(thumb);
-    });
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = html;
+        previewContainer.appendChild(wrapper.firstElementChild);
+    }
+    previewContainer.addEventListener('click', removeAttachment);
 };
 
 // --- Realtime ---
 
-const handleRealtimeEvent = (eventData) => {
+const handleRealtimeEvent = async(eventData) => {
     const {component, area, payload} = eventData;
 
     if (component !== 'local_zoomchat' || area !== 'zoomchat') {
@@ -615,7 +563,7 @@ const handleRealtimeEvent = (eventData) => {
     }
 
     if (selectedPartnerId && Number(payload.from_userid) === Number(selectedPartnerId)) {
-        renderMessage({
+        await renderMessage({
             id: payload.messageid,
             message: payload.message,
             timestamp: payload.timestamp,
@@ -629,13 +577,13 @@ const handleRealtimeEvent = (eventData) => {
             '[data-userid="' + payload.from_userid + '"]'
         );
         if (!item) {
-            item = createConvItem({
+            const newItem = await createConvItem({
                 id: payload.from_userid,
                 name: payload.sender_name || '',
                 picture: payload.sender_picture || '',
                 unreadcount: 1,
             });
-            convListEl.prepend(item);
+            convListEl.prepend(newItem);
         } else {
             const badge = item.querySelector('.local-zoomchat-conv-unread');
             if (badge) {
@@ -664,12 +612,8 @@ export const init = async(cfg) => {
     try {
         [
             strZoomchat,
-            strNoconversations,
-            strMessage,
-            strSend,
-            strEnter,
             strSelect,
-            strAttach,
+            strSend,
             strSending,
             strError,
             strErrorLoad,
@@ -678,16 +622,10 @@ export const init = async(cfg) => {
             strImage,
             strFile,
             strNew,
-            strClose,
-            strRemove,
         ] = await getStrings([
             {key: 'pluginname', component: 'local_zoomchat'},
-            {key: 'noconversations', component: 'local_zoomchat'},
-            {key: 'message', component: 'local_zoomchat'},
-            {key: 'send', component: 'local_zoomchat'},
-            {key: 'entermessage', component: 'local_zoomchat'},
             {key: 'selectcontact', component: 'local_zoomchat'},
-            {key: 'attachimage', component: 'local_zoomchat'},
+            {key: 'send', component: 'local_zoomchat'},
             {key: 'sending', component: 'local_zoomchat'},
             {key: 'error', component: 'core'},
             {key: 'error:loadfailed', component: 'local_zoomchat'},
@@ -696,17 +634,11 @@ export const init = async(cfg) => {
             {key: 'image', component: 'local_zoomchat'},
             {key: 'file', component: 'local_zoomchat'},
             {key: 'newmessage', component: 'local_zoomchat'},
-            {key: 'close', component: 'local_zoomchat'},
-            {key: 'remove', component: 'local_zoomchat'},
         ]);
     } catch (error) {
         strZoomchat = 'Zoom Chat';
-        strNoconversations = 'No conversations';
-        strMessage = 'Message';
-        strSend = 'Send';
-        strEnter = 'Enter your message';
         strSelect = 'Select a contact';
-        strAttach = 'Attach image';
+        strSend = 'Send';
         strSending = 'Sending...';
         strError = 'Error';
         strErrorLoad = 'Failed to load messages.';
@@ -715,8 +647,6 @@ export const init = async(cfg) => {
         strImage = 'Image';
         strFile = 'File';
         strNew = 'New message';
-        strClose = 'Close';
-        strRemove = 'Remove';
     }
 
     createBubble();

@@ -1,0 +1,49 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_zoomchat/toast
+
+    Notification toast shown when a new message arrives while the modal is closed.
+
+    Classes required for JS:
+    * local-zoomchat-toast
+
+    Data attributes required for JS:
+    * data-userid
+
+    Context variables required for this template:
+    * fromuserid number Sender user ID
+    * sendername string Sender full name
+    * preview string Message preview text
+    * timestamp string Relative time text
+
+    Example context (json):
+    {
+        "fromuserid": 42,
+        "sendername": "John Doe",
+        "preview": "Hello, how are you?",
+        "timestamp": "now"
+    }
+}}
+<div class="local-zoomchat-toast" role="alert" data-userid="{{fromuserid}}">
+    <div class="toast-header">
+        <strong class="me-auto">{{sendername}}</strong>
+        <small class="text-muted ms-2">{{timestamp}}</small>
+        <button type="button" class="btn-close" data-dismiss="toast" aria-label="{{#str}} close, local_zoomchat {{/str}}"></button>
+    </div>
+    <div class="toast-body text-break">{{preview}}</div>
+</div>

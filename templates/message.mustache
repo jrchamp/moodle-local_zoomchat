@@ -43,8 +43,8 @@
         "mymessage": true
     }
 }}
-<li class="local-zoomchat-msg{{#mymessage}} local-zoomchat-msg-mine{{/mymessage}}{{^mymessage}} local-zoomchat-msg-theirs{{/mymessage}}"
+<div class="local-zoomchat-msg{{#mymessage}} local-zoomchat-msg-mine{{/mymessage}}{{^mymessage}} local-zoomchat-msg-theirs{{/mymessage}}"
     data-messageid="{{id}}" data-timestamp="{{timestamp}}">
     <div class="local-zoomchat-bubble">{{{message}}}</div>
     <div class="local-zoomchat-msg-time">{{timestampformatted}}</div>
-</li>
+</div>

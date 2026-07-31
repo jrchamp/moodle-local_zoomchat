@@ -371,9 +371,7 @@ const loadMessages = async(partnerId, since) => {
         }])[0];
 
         if (data.messages) {
-            for (const msg of data.messages) {
-                await renderMessage(msg);
-            }
+            await renderMessages(data.messages);
             scrollMessagesDown();
         }
     } catch (ex) {
@@ -391,13 +389,15 @@ const loadNewMessages = (partnerId) => {
     loadMessages(partnerId, lasttime);
 };
 
-const renderMessage = async(msg) => {
-    const html = await Templates.render('local_zoomchat/message', {
-        id: msg.id,
-        message: msg.message,
-        timestamp: msg.timestamp,
-        timestampformatted: getTimeStr(msg.timestamp),
-        mymessage: msg.mymessage,
+const renderMessages = async(msgs) => {
+    const html = await Templates.render('local_zoomchat/messages', {
+        messages: msgs.map((msg) => ({
+            id: msg.id,
+            message: msg.message,
+            timestamp: msg.timestamp,
+            timestampformatted: getTimeStr(msg.timestamp),
+            mymessage: msg.mymessage,
+        })),
     });
     messagesList.insertAdjacentHTML('beforeend', html);
 
@@ -563,12 +563,12 @@ const handleRealtimeEvent = async(eventData) => {
     }
 
     if (selectedPartnerId && Number(payload.from_userid) === Number(selectedPartnerId)) {
-        await renderMessage({
+        await renderMessages([{
             id: payload.messageid,
             message: payload.message,
             timestamp: payload.timestamp,
             mymessage: false,
-        });
+        }]);
         scrollMessagesDown();
         clearUnreadForPartner(payload.from_userid);
     } else {

@@ -34,28 +34,30 @@
 <div id="local-zoomchat-modal-body">
     <div id="local-zoomchat-convlist">
         <div class="local-zoomchat-convlist-header">{{#str}} message, local_zoomchat {{/str}}</div>
-        <div class="local-zoomchat-convlist-items"></div>
+        <div class="local-zoomchat-convlist-items" aria-live="polite" aria-busy="false"></div>
     </div>
     <div id="local-zoomchat-chat">
         <div class="local-zoomchat-chat-header">
-            <button class="local-zoomchat-back-btn" aria-label="{{#str}} close, local_zoomchat {{/str}}">&larr;</button>
+            <button class="local-zoomchat-back-btn" aria-label="{{#str}} back, local_zoomchat {{/str}}"><span aria-hidden="true">&larr;</span></button>
             <span class="local-zoomchat-chat-partner-name">{{#str}} selectcontact, local_zoomchat {{/str}}</span>
         </div>
         <div class="local-zoomchat-messages-container">
             <div class="local-zoomchat-empty">{{#str}} selectcontact, local_zoomchat {{/str}}</div>
-            <div id="local-zoomchat-messages-list"></div>
+            <div id="local-zoomchat-messages-list" role="log" aria-live="polite" aria-atomic="false"></div>
         </div>
         <div class="local-zoomchat-input-area">
             <div class="local-zoomchat-input-wrapper">
                 <div id="local-zoomchat-attachment-previews"></div>
                 <textarea id="local-zoomchat-message-input" rows="1"
-                    placeholder="{{#str}} entermessage, local_zoomchat {{/str}}" disabled></textarea>
+                    placeholder="{{#str}} entermessage, local_zoomchat {{/str}}"
+                    aria-label="{{#str}} entermessage, local_zoomchat {{/str}}" disabled></textarea>
             </div>
             <div id="local-zoomchat-input-actions">
                 <input type="file" id="local-zoomchat-file-input" accept="image/*" hidden>
                 <button type="button" id="local-zoomchat-attach-btn"
                     class="btn btn-outline-secondary btn-sm local-zoomchat-btn"
-                    title="{{#str}} attachimage, local_zoomchat {{/str}}" disabled>📎</button>
+                    title="{{#str}} attachimage, local_zoomchat {{/str}}"
+                    aria-label="{{#str}} attachimage, local_zoomchat {{/str}}" disabled><span aria-hidden="true">📎</span></button>
                 <button type="button" id="local-zoomchat-send-btn"
                     class="btn btn-primary btn-sm local-zoomchat-btn" disabled>
                     {{#str}} send, local_zoomchat {{/str}}</button>

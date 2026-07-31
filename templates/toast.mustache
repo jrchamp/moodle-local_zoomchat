@@ -21,6 +21,7 @@
 
     Classes required for JS:
     * local-zoomchat-toast
+    * toast-body
 
     Data attributes required for JS:
     * data-userid
@@ -45,5 +46,5 @@
         <small class="text-muted ms-2">{{timestamp}}</small>
         <button type="button" class="btn-close" data-dismiss="toast" aria-label="{{#str}} close, local_zoomchat {{/str}}"></button>
     </div>
-    <div class="toast-body text-break">{{preview}}</div>
+    <div class="toast-body text-break" role="button" tabindex="0">{{preview}}</div>
 </div>

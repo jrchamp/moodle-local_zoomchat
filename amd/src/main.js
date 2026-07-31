@@ -41,6 +41,8 @@ let strUnknown = '';
 let strImage = '';
 let strFile = '';
 let strNew = '';
+let strUnreadMessages = '';
+let strYou = '';
 let strZoomchat = '';
 
 let bubble = null;
@@ -102,7 +104,8 @@ const createBubble = () => {
     bubble = document.createElement('button');
     bubble.id = 'local-zoomchat-bubble';
     bubble.setAttribute('aria-label', strZoomchat);
-    bubble.innerHTML = '<span class="local-zoomchat-bubble-icon">💬</span>';
+    bubble.setAttribute('aria-haspopup', 'dialog');
+    bubble.innerHTML = '<span class="local-zoomchat-bubble-icon" aria-hidden="true">💬</span>';
     bubble.addEventListener('click', () => openModal());
     document.body.appendChild(bubble);
 };
@@ -113,9 +116,14 @@ const updateBubbleBadge = () => {
     if (!badge) {
         badge = document.createElement('span');
         badge.className = 'local-zoomchat-bubble-count';
+        badge.setAttribute('aria-hidden', 'true');
         bubble.appendChild(badge);
     }
     badge.textContent = unreadCount;
+    bubble.setAttribute(
+        'aria-label',
+        strZoomchat + ', ' + strUnreadMessages.replace('{$a}', String(unreadCount))
+    );
 };
 
 // --- Toasts ---
@@ -161,12 +169,28 @@ const showToast = async(payload) => {
         openModal(payload.from_userid);
     });
 
+    const toastBody = toast.querySelector('.toast-body');
+    toastBody.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toast.remove();
+            openModal(payload.from_userid);
+        }
+    });
+
     toastContainer.appendChild(toast);
 
     setTimeout(() => {
         if (toast.parentNode) {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
+            if (toast.contains(document.activeElement)) {
+                bubble.focus();
+            }
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                toast.remove();
+            } else {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }
         }
     }, 6000);
 };
@@ -255,6 +279,7 @@ const openModal = (partnerId) => {
 };
 
 const showConversationList = () => {
+    const activeItem = convListEl.querySelector('.local-zoomchat-conv-item.active');
     convListEl.closest('#local-zoomchat-convlist').classList.remove('local-zoomchat-convlist-hidden');
     backBtn.style.display = 'none';
     selectedPartnerId = null;
@@ -266,6 +291,9 @@ const showConversationList = () => {
     if (pollTimer) {
         clearInterval(pollTimer);
         pollTimer = null;
+    }
+    if (activeItem) {
+        activeItem.focus();
     }
 };
 
@@ -299,6 +327,7 @@ const createConvItem = async(user) => {
 const loadConversations = async() => {
     const loadingHtml = await Templates.render('local_zoomchat/conv_list_state', {loading: true});
     convListEl.innerHTML = loadingHtml;
+    convListEl.setAttribute('aria-busy', 'true');
 
     try {
         const data = await fetchMany([{
@@ -307,6 +336,7 @@ const loadConversations = async() => {
         }])[0];
 
         convListEl.innerHTML = '';
+        convListEl.setAttribute('aria-busy', 'false');
 
         if (!data.users || data.users.length === 0) {
             const emptyHtml = await Templates.render('local_zoomchat/conv_list_state', {
@@ -331,6 +361,7 @@ const loadConversations = async() => {
             message: strErrorLoad,
         });
         convListEl.innerHTML = errorHtml;
+        convListEl.setAttribute('aria-busy', 'false');
     }
 };
 
@@ -340,7 +371,13 @@ const selectConversation = (partnerId, partnerName) => {
     selectedPartnerId = partnerId;
 
     convListEl.querySelectorAll('.local-zoomchat-conv-item').forEach((el) => {
-        el.classList.toggle('active', parseInt(el.dataset.userid) === partnerId);
+        const active = parseInt(el.dataset.userid) === partnerId;
+        el.classList.toggle('active', active);
+        if (active) {
+            el.setAttribute('aria-current', 'true');
+        } else {
+            el.removeAttribute('aria-current');
+        }
     });
 
     convListEl.closest('#local-zoomchat-convlist').classList.add('local-zoomchat-convlist-hidden');
@@ -397,6 +434,7 @@ const renderMessages = async(msgs) => {
             timestamp: msg.timestamp,
             timestampformatted: getTimeStr(msg.timestamp),
             mymessage: msg.mymessage,
+            sendername: msg.mymessage ? strYou : (msg.sendername || strUnknown),
         })),
     });
     messagesList.insertAdjacentHTML('beforeend', html);
@@ -568,6 +606,7 @@ const handleRealtimeEvent = async(eventData) => {
             message: payload.message,
             timestamp: payload.timestamp,
             mymessage: false,
+            sendername: payload.sender_name || strUnknown,
         }]);
         scrollMessagesDown();
         clearUnreadForPartner(payload.from_userid);
@@ -605,6 +644,9 @@ const handleConnectionLost = () => {
 // --- Init ---
 
 export const init = async(cfg) => {
+    if (window.__localZoomchatLoaded) {
+        return;
+    }
     config = cfg;
 
     window.__localZoomchatLoaded = true;
@@ -622,6 +664,8 @@ export const init = async(cfg) => {
             strImage,
             strFile,
             strNew,
+            strUnreadMessages,
+            strYou,
         ] = await getStrings([
             {key: 'pluginname', component: 'local_zoomchat'},
             {key: 'selectcontact', component: 'local_zoomchat'},
@@ -634,6 +678,8 @@ export const init = async(cfg) => {
             {key: 'image', component: 'local_zoomchat'},
             {key: 'file', component: 'local_zoomchat'},
             {key: 'newmessage', component: 'local_zoomchat'},
+            {key: 'unreadmessages', component: 'local_zoomchat'},
+            {key: 'you', component: 'local_zoomchat'},
         ]);
     } catch (error) {
         strZoomchat = 'Zoom Chat';
@@ -647,6 +693,8 @@ export const init = async(cfg) => {
         strImage = 'Image';
         strFile = 'File';
         strNew = 'New message';
+        strUnreadMessages = '{$a} unread messages';
+        strYou = 'You';
     }
 
     createBubble();

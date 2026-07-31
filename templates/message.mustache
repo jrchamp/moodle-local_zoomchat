@@ -33,6 +33,7 @@
     * timestamp number Unix timestamp
     * timestampformatted string Formatted date/time string
     * mymessage boolean Whether the message was sent by the current user
+    * sendername string Name of the message sender (e.g. "You" for own messages)
 
     Example context (json):
     {
@@ -40,11 +41,12 @@
         "message": "Hello!",
         "timestamp": 1700000000,
         "timestampformatted": "2024-01-01 12:00",
-        "mymessage": true
+        "mymessage": true,
+        "sendername": "You"
     }
 }}
 <div class="local-zoomchat-msg{{#mymessage}} local-zoomchat-msg-mine{{/mymessage}}{{^mymessage}} local-zoomchat-msg-theirs{{/mymessage}}"
     data-messageid="{{id}}" data-timestamp="{{timestamp}}">
-    <div class="local-zoomchat-bubble">{{{message}}}</div>
+    <div class="local-zoomchat-bubble"><span class="sr-only visually-hidden">{{sendername}}: </span>{{{message}}}</div>
     <div class="local-zoomchat-msg-time">{{timestampformatted}}</div>
 </div>

@@ -278,6 +278,21 @@ const openModal = (partnerId) => {
     modalInstance.show();
 };
 
+/**
+ * Open Zoom Chat with a specific Moodle user.
+ *
+ * @param {number|string} moodleUserId Moodle user ID.
+ */
+const openChatWithMoodleUser = (moodleUserId) => {
+    const partnerId = Number.parseInt(moodleUserId, 10);
+
+    if (!Number.isInteger(partnerId) || partnerId <= 0) {
+        return;
+    }
+
+    openModal(partnerId);
+};
+
 const showConversationList = () => {
     const activeItem = convListEl.querySelector('.local-zoomchat-conv-item.active');
     convListEl.closest('#local-zoomchat-convlist').classList.remove('local-zoomchat-convlist-hidden');
@@ -351,7 +366,16 @@ const loadConversations = async() => {
         items.forEach((item) => convListEl.appendChild(item));
 
         if (selectedPartnerId) {
-            selectConversation(selectedPartnerId, '');
+            const selectedUser = data.users.find(
+                (user) => Number(user.id) === Number(selectedPartnerId)
+            );
+
+            if (selectedUser) {
+                selectConversation(selectedUser.id, selectedUser.name);
+            } else {
+                selectedPartnerId = null;
+                showConversationList();
+            }
         } else if (data.users.length > 0) {
             selectConversation(data.users[0].id, data.users[0].name);
         }
@@ -700,6 +724,33 @@ export const init = async(cfg) => {
     createBubble();
     createToastContainer();
     await createModal();
+
+    document.addEventListener('click', (event) => {
+        if (!(event.target instanceof Element)) {
+            return;
+        }
+
+        const trigger = event.target.closest(
+            '[data-local-zoomchat-moodle-userid]'
+        );
+
+        if (!trigger) {
+            return;
+        }
+
+        event.preventDefault();
+
+        openChatWithMoodleUser(
+            trigger.dataset.localZoomchatMoodleUserid
+        );
+    });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const moodleUserId = urlParams.get('zoomchatuserid');
+
+    if (moodleUserId) {
+        openChatWithMoodleUser(moodleUserId);
+    }
 
     PubSub.subscribe(RealTimeEvents.EVENT, handleRealtimeEvent);
     PubSub.subscribe(RealTimeEvents.CONNECTION_LOST, handleConnectionLost);

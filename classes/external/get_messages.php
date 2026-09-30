@@ -78,16 +78,21 @@ class get_messages extends external_api {
 
         $messages = zoomchat_helper::get_zoom_conversation_messages($USER, $partnerzoomid, 0, 50);
 
+        $myfullname = fullname($USER);
+        $partnerfullname = fullname($partneruser);
+
         $formatted = [];
         foreach ($messages as $msg) {
             if ($lasttime && $msg->timestamp <= $lasttime) {
                 continue;
             }
+            $ismine = ($msg->from_zoom_id === $zoomuserid);
             $formatted[] = [
                 'id' => (int) $msg->id,
                 'message' => format_text($msg->message, FORMAT_MOODLE, ['context' => context_system::instance()]),
                 'timestamp' => (int) $msg->timestamp,
-                'mymessage' => ($msg->from_zoom_id === $zoomuserid),
+                'mymessage' => $ismine,
+                'sendername' => $ismine ? $myfullname : $partnerfullname,
             ];
         }
 
@@ -107,6 +112,7 @@ class get_messages extends external_api {
                     'message' => new external_value(PARAM_RAW, 'Message content (HTML)'),
                     'timestamp' => new external_value(PARAM_INT, 'Message timestamp'),
                     'mymessage' => new external_value(PARAM_BOOL, 'Whether this message was sent by the current user'),
+                    'sendername' => new external_value(PARAM_TEXT, 'Full name of the message sender'),
                 ])
             ),
         ]);

@@ -406,3 +406,15 @@
     color: var(--bs-secondary-color, #6a737b);
     padding: 20px;
 }
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    #local-zoomchat-bubble,
+    .local-zoomchat-conv-item {
+        transition: none;
+    }
+
+    .local-zoomchat-toast-container .local-zoomchat-toast {
+        transition: none;
+    }
+}

@@ -28,7 +28,6 @@ require(__DIR__ . '/../../config.php');
 
 use core\context\system as context_system;
 use core\exception\moodle_exception;
-use Throwable;
 
 require_login(null, false, null, false, true);
 require_sesskey();

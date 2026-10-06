@@ -75,7 +75,7 @@ Zoom sends a validation challenge when the endpoint URL is configured. The plugi
 
 ## Usage
 
-A chat bubble appears in the bottom-right corner of every page. Click it to:
+A chat bubble appears in the bottom-left corner of every page. Click it to:
 
 - See conversations with any Zoom Team Chat contact
 - Send text messages, images, and file attachments

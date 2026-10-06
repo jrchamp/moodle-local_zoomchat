@@ -43,6 +43,11 @@ use tool_zoomapi\helper as zoomapi_helper;
  */
 class webhook {
     /**
+     * Maximum size in bytes of a file downloaded from Zoom.
+     */
+    private const MAX_FILE_SIZE = 20971520;
+
+    /**
      * Handle the incoming Zoom webhook request.
      */
     public static function handle_request(): void {
@@ -169,6 +174,12 @@ class webhook {
             return;
         }
 
+        // Keep the validation MAC and the event MAC over disjoint input spaces.
+        if (str_starts_with($plaintoken, 'v0:')) {
+            self::respond(400, ['error' => 'Invalid plainToken']);
+            return;
+        }
+
         $secret = self::get_webhook_secret();
         if (empty($secret)) {
             debugging('Zoom webhook secret not configured for validation', DEBUG_DEVELOPER);
@@ -206,7 +217,7 @@ class webhook {
             return false;
         }
 
-        if (di::get(clock::class)->time() - (int) $timestamp > 300) {
+        if (abs(di::get(clock::class)->time() - (int) $timestamp) > 300) {
             return false;
         }
 
@@ -550,6 +561,21 @@ class webhook {
     }
 
     /**
+     * Whether a downloaded file's MIME type may be stored.
+     *
+     * @param string $mimetype The detected MIME type.
+     * @return bool
+     */
+    protected static function is_allowed_file_mimetype(string $mimetype): bool {
+        if (helper::is_inline_image_mimetype($mimetype)) {
+            return true;
+        }
+
+        return $mimetype === 'text/plain'
+            || file_mimetype_in_typegroup($mimetype, ['document', 'spreadsheet', 'presentation']);
+    }
+
+    /**
      * Download files from Zoom, store them in Moodle's file API, build HTML.
      *
      * @param array $files Array of file data from the payload.
@@ -579,10 +605,11 @@ class webhook {
         $filehtml = '';
         $fileitemids = [];
 
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+
         foreach ($files as $filedata) {
             $fileid = $filedata['file_id'] ?? '';
             $filename = $filedata['file_name'] ?? 'unknown';
-            $filetype = $filedata['OS_file_type'] ?? '';
 
             if (empty($fileid)) {
                 continue;
@@ -597,6 +624,17 @@ class webhook {
                 continue;
             }
 
+            if (strlen($content) > self::MAX_FILE_SIZE) {
+                debugging("Zoom webhook: skipping oversized file {$filename}", DEBUG_DEVELOPER);
+                continue;
+            }
+
+            $detectedmime = finfo_buffer($finfo, $content) ?: 'application/octet-stream';
+            if (!self::is_allowed_file_mimetype($detectedmime)) {
+                debugging("Zoom webhook: skipping disallowed file type {$detectedmime} for {$filename}", DEBUG_DEVELOPER);
+                continue;
+            }
+
             $itemid = random_int(0, 2147483647);
             $cleanname = clean_filename($filename);
 
@@ -607,6 +645,7 @@ class webhook {
                 'itemid' => $itemid,
                 'filepath' => '/',
                 'filename' => $cleanname,
+                'mimetype' => $detectedmime,
             ];
 
             try {
@@ -625,7 +664,7 @@ class webhook {
                 $cleanname
             );
 
-            if ($filetype === 'image' || preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $cleanname)) {
+            if (helper::is_inline_image_mimetype($detectedmime)) {
                 $filehtml .= '<img src="' . $url->out() . '" alt="' . s($cleanname) . '">';
             } else {
                 $filehtml .= '<a href="' . $url->out() . '" target="_blank">' . s($cleanname) . '</a>';
@@ -633,6 +672,8 @@ class webhook {
 
             $fileitemids[] = $itemid;
         }
+
+        finfo_close($finfo);
 
         if (empty($filehtml)) {
             return null;

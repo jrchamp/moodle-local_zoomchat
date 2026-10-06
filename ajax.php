@@ -77,6 +77,7 @@ try {
         'filepath' => '/',
         'filename' => $filename,
         'userid' => $USER->id,
+        'mimetype' => $detectedmime,
     ];
 
     $storedfile = $fs->create_file_from_pathname($filerecord, $file['tmp_name']);
@@ -93,8 +94,7 @@ try {
         'html' => '<img src="' . $url->out() . '" alt="' . s($filename) . '">',
         'fileitemid' => $itemid,
     ]);
-} catch (moodle_exception $e) {
-    echo json_encode(['error' => $e->getMessage()]);
 } catch (Throwable $e) {
-    echo json_encode(['error' => $e->getMessage()]);
+    debugging('local_zoomchat upload error: ' . $e->getMessage(), DEBUG_DEVELOPER);
+    echo json_encode(['error' => get_string('error:fileuploadfailed', 'local_zoomchat')]);
 }

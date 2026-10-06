@@ -38,6 +38,8 @@ use core_privacy\local\request\transform;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 use core_user;
+use stdClass;
+use Throwable;
 use tool_zoomapi\helper as zoomapi_helper;
 
 /**
@@ -69,7 +71,30 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
      * @return contextlist
      */
     public static function get_contexts_for_userid(int $userid): contextlist {
-        return new contextlist();
+        global $DB;
+
+        $contextlist = new contextlist();
+
+        $user = core_user::get_user($userid);
+        if (!$user) {
+            return $contextlist;
+        }
+
+        $zoomid = self::get_zoom_id($user);
+        if ($zoomid === null) {
+            return $contextlist;
+        }
+
+        $hasdata = $DB->record_exists_select(
+            'local_zoomchat_messages',
+            'from_zoom_id = :zoomid1 OR to_zoom_id = :zoomid2',
+            ['zoomid1' => $zoomid, 'zoomid2' => $zoomid]
+        );
+        if ($hasdata) {
+            $contextlist->add_user_context($userid);
+        }
+
+        return $contextlist;
     }
 
     /**
@@ -78,6 +103,31 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
      * @param userlist $userlist The userlist containing the list of users who have data in this context/plugin combination.
      */
     public static function get_users_in_context(userlist $userlist) {
+        global $DB;
+
+        $context = $userlist->get_context();
+        if (!$context instanceof context_user) {
+            return;
+        }
+
+        $user = core_user::get_user($context->instanceid);
+        if (!$user) {
+            return;
+        }
+
+        $zoomid = self::get_zoom_id($user);
+        if ($zoomid === null) {
+            return;
+        }
+
+        $hasdata = $DB->record_exists_select(
+            'local_zoomchat_messages',
+            'from_zoom_id = :zoomid1 OR to_zoom_id = :zoomid2',
+            ['zoomid1' => $zoomid, 'zoomid2' => $zoomid]
+        );
+        if ($hasdata) {
+            $userlist->add_user($user->id);
+        }
     }
 
     /**
@@ -90,12 +140,10 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
 
         $user = $contextlist->get_user();
 
-        $zoomuser = zoomapi_helper::get_user(zoomapi_helper::get_api_identifier($user));
-        if (empty($zoomuser) || empty($zoomuser['id'])) {
+        $zoomid = self::get_zoom_id($user);
+        if ($zoomid === null) {
             return;
         }
-
-        $zoomid = $zoomuser['id'];
 
         $recordset = $DB->get_recordset_select(
             'local_zoomchat_messages',
@@ -128,6 +176,27 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
      * @param context $context The specific context to delete data for.
      */
     public static function delete_data_for_all_users_in_context(context $context) {
+        global $DB;
+
+        if (!$context instanceof context_user) {
+            return;
+        }
+
+        $user = core_user::get_user($context->instanceid);
+        if (!$user) {
+            return;
+        }
+
+        $zoomid = self::get_zoom_id($user);
+        if ($zoomid === null) {
+            return;
+        }
+
+        $DB->delete_records_select(
+            'local_zoomchat_messages',
+            'from_zoom_id = :zoomid1 OR to_zoom_id = :zoomid2',
+            ['zoomid1' => $zoomid, 'zoomid2' => $zoomid]
+        );
     }
 
     /**
@@ -140,12 +209,10 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
 
         $user = $contextlist->get_user();
 
-        $zoomuser = zoomapi_helper::get_user(zoomapi_helper::get_api_identifier($user));
-        if (empty($zoomuser) || empty($zoomuser['id'])) {
+        $zoomid = self::get_zoom_id($user);
+        if ($zoomid === null) {
             return;
         }
-
-        $zoomid = $zoomuser['id'];
 
         $DB->delete_records_select(
             'local_zoomchat_messages',
@@ -166,9 +233,9 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         foreach ($userlist->get_userids() as $userid) {
             $user = core_user::get_user($userid);
             if ($user) {
-                $zoomuser = zoomapi_helper::get_user(zoomapi_helper::get_api_identifier($user));
-                if (!empty($zoomuser) && !empty($zoomuser['id'])) {
-                    $zoomids[] = $zoomuser['id'];
+                $zoomid = self::get_zoom_id($user);
+                if ($zoomid !== null) {
+                    $zoomids[] = $zoomid;
                 }
             }
         }
@@ -180,5 +247,33 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         [$insql, $inparams] = $DB->get_in_or_equal($zoomids, SQL_PARAMS_NAMED);
         $DB->delete_records_select('local_zoomchat_messages', "from_zoom_id $insql", $inparams);
         $DB->delete_records_select('local_zoomchat_messages', "to_zoom_id $insql", $inparams);
+    }
+
+    /**
+     * Resolve the Zoom user ID for a Moodle user.
+     *
+     * @param stdClass $user The Moodle user.
+     * @return string|null
+     */
+    private static function get_zoom_id(stdClass $user): ?string {
+        global $DB;
+
+        $mapped = $DB->get_field('tool_zoomapi_user_mappings', 'zoom_userid', ['userid' => $user->id]);
+        if (!empty($mapped)) {
+            return (string) $mapped;
+        }
+
+        try {
+            $zoomuser = zoomapi_helper::get_user(zoomapi_helper::get_api_identifier($user));
+        } catch (Throwable $e) {
+            debugging('local_zoomchat privacy: failed to resolve Zoom ID: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            return null;
+        }
+
+        if (empty($zoomuser) || empty($zoomuser['id'])) {
+            return null;
+        }
+
+        return (string) $zoomuser['id'];
     }
 }

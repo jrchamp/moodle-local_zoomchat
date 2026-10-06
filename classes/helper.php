@@ -142,7 +142,12 @@ class helper {
      * @return array Array of user records (those with Zoom accounts).
      */
     public static function get_course_contacts(stdClass $user, int $courseid): array {
-        if ($courseid <= 0) {
+        if ($courseid <= 0 || $courseid === SITEID) {
+            return [];
+        }
+
+        $course = get_course($courseid);
+        if (!can_access_course($course, $user, 'moodle/course:view', true)) {
             return [];
         }
 
@@ -171,6 +176,76 @@ class helper {
         }
 
         return $contacts;
+    }
+
+    /**
+     * Whether the sender may start a conversation with the recipient.
+     *
+     * @param \stdClass $sender The user sending the message.
+     * @param \stdClass $recipient The intended recipient.
+     * @return bool
+     */
+    public static function can_message_user(stdClass $sender, stdClass $recipient): bool {
+        global $DB;
+
+        if ((int) $sender->id === (int) $recipient->id) {
+            return false;
+        }
+
+        $senderzoom = zoomapi_helper::get_user(zoomapi_helper::get_api_identifier($sender));
+        $recipientzoom = zoomapi_helper::get_user(zoomapi_helper::get_api_identifier($recipient));
+        if (empty($senderzoom['id']) || empty($recipientzoom['id'])) {
+            return false;
+        }
+
+        $hasexisting = $DB->record_exists_select(
+            'local_zoomchat_messages',
+            '((from_zoom_id = :sender1 AND to_zoom_id = :recipient1)
+                OR (from_zoom_id = :recipient2 AND to_zoom_id = :sender2))
+                AND deleted = 0',
+            [
+                'sender1' => $senderzoom['id'],
+                'recipient1' => $recipientzoom['id'],
+                'sender2' => $senderzoom['id'],
+                'recipient2' => $recipientzoom['id'],
+            ]
+        );
+        if ($hasexisting) {
+            return true;
+        }
+
+        $courses = enrol_get_users_courses($sender->id, true, 'id');
+        foreach ($courses as $course) {
+            if ((int) $course->id === SITEID) {
+                continue;
+            }
+            $context = context_course::instance($course->id);
+            $iseditor = has_capability('moodle/course:update', $context, $sender);
+            if (is_enrolled($context, $recipient, $iseditor ? '' : 'moodle/course:update', true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get the MIME types allowed to render inline.
+     *
+     * @return string[]
+     */
+    public static function get_inline_image_mimetypes(): array {
+        return ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    }
+
+    /**
+     * Whether the MIME type may render inline.
+     *
+     * @param string $mimetype The MIME type.
+     * @return bool
+     */
+    public static function is_inline_image_mimetype(string $mimetype): bool {
+        return in_array($mimetype, self::get_inline_image_mimetypes(), true);
     }
 
     /**
@@ -242,7 +317,7 @@ class helper {
             return ['success' => false, 'error' => get_string('error:norecipientzoom', 'local_zoomchat')];
         }
 
-        $zoomfileids = self::upload_files_to_zoom($senderzoom['id'], $fileitemids, $contextid);
+        $zoomfileids = self::upload_files_to_zoom($senderzoom['id'], (int) $sender->id, $fileitemids, $contextid);
 
         $zoomtext = preg_replace('/<img[^>]*>/i', '', $messagetext);
         $zoomtext = trim($zoomtext);
@@ -259,7 +334,7 @@ class helper {
             $zoomresponse = api::instance()->create_user_message($senderzoom['id'], $zoompayload);
         } catch (moodle_exception $e) {
             debugging('Failed to send Zoom DM: ' . $e->getMessage(), DEBUG_DEVELOPER);
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['success' => false, 'error' => get_string('error:sendfailed', 'local_zoomchat')];
         }
 
         $zoommessageid = $zoomresponse['id'] ?? null;
@@ -273,7 +348,7 @@ class helper {
             $zoommessageid
         );
 
-        self::record_file_links($messageid, $fileitemids, $contextid);
+        self::record_file_links($messageid, (int) $sender->id, $fileitemids, $contextid);
 
         return ['success' => true, 'messageid' => $messageid];
     }
@@ -282,11 +357,17 @@ class helper {
      * Upload file attachments to Zoom and return their Zoom file IDs.
      *
      * @param string $zoomuserid The sender's Zoom user ID.
+     * @param int $senderid The sender's Moodle user ID.
      * @param string $fileitemids Comma-separated Moodle file itemids.
      * @param int $contextid The context ID.
      * @return array Array of Zoom file IDs.
      */
-    private static function upload_files_to_zoom(string $zoomuserid, string $fileitemids, int $contextid): array {
+    private static function upload_files_to_zoom(
+        string $zoomuserid,
+        int $senderid,
+        string $fileitemids,
+        int $contextid
+    ): array {
         $zoomfileids = [];
         if (empty($fileitemids) || $contextid <= 0) {
             return $zoomfileids;
@@ -297,7 +378,7 @@ class helper {
             if ($itemid <= 0) {
                 continue;
             }
-            $zoomid = self::upload_attachment_to_zoom($zoomuserid, $itemid, $contextid);
+            $zoomid = self::upload_attachment_to_zoom($zoomuserid, $senderid, $itemid, $contextid);
             if ($zoomid !== null) {
                 $zoomfileids[] = $zoomid;
             }
@@ -309,12 +390,14 @@ class helper {
      * Upload a single attachment to Zoom and return the Zoom file ID.
      *
      * @param string $zoomuserid The sender's Zoom user ID.
+     * @param int $senderid The sender's Moodle user ID.
      * @param int $itemid The Moodle file itemid.
      * @param int $contextid The context ID.
      * @return string|null The Zoom file ID, or null on failure.
      */
     private static function upload_attachment_to_zoom(
         string $zoomuserid,
+        int $senderid,
         int $itemid,
         int $contextid
     ): ?string {
@@ -334,6 +417,11 @@ class helper {
         }
 
         $file = reset($files);
+        if ((int) $file->get_userid() !== $senderid) {
+            debugging('Attachment ' . $itemid . ' does not belong to the sender', DEBUG_DEVELOPER);
+            return null;
+        }
+
         $temppath = make_temp_directory('zoomchat_uploads') . '/' . $file->get_filename();
         $file->copy_content_to($temppath);
 
@@ -356,11 +444,12 @@ class helper {
      * Record file-to-message associations in the local_zoomchat_message_files table.
      *
      * @param int $messageid The local message ID.
+     * @param int $senderid The sender's Moodle user ID.
      * @param string $fileitemids Comma-separated Moodle file itemids.
      * @param int $contextid The context ID.
      * @return void
      */
-    private static function record_file_links(int $messageid, string $fileitemids, int $contextid): void {
+    private static function record_file_links(int $messageid, int $senderid, string $fileitemids, int $contextid): void {
         global $DB;
         if (empty($fileitemids) || $contextid <= 0) {
             return;
@@ -374,6 +463,9 @@ class helper {
             $fs = get_file_storage();
             $files = $fs->get_area_files($contextid, 'local_zoomchat', 'attachment', $itemid, 'filename ASC', false);
             foreach ($files as $file) {
+                if ((int) $file->get_userid() !== $senderid) {
+                    continue;
+                }
                 $record = new stdClass();
                 $record->messageid = $messageid;
                 $record->itemid = $itemid;

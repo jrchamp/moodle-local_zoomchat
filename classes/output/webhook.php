@@ -54,13 +54,13 @@ class webhook {
             return;
         }
 
-        if (isset($payload['event']) && $payload['event'] === 'endpoint.url_validation') {
-            self::handle_validation_challenge($payload);
+        if (!self::validate_signature($rawbody)) {
+            self::respond(401, ['error' => 'Invalid signature']);
             return;
         }
 
-        if (!self::validate_signature($rawbody)) {
-            self::respond(401, ['error' => 'Invalid signature']);
+        if (isset($payload['event']) && $payload['event'] === 'endpoint.url_validation') {
+            self::handle_validation_challenge($payload);
             return;
         }
 

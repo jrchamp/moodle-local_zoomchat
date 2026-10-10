@@ -25,9 +25,9 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_zoomchat';
-$plugin->version = 2026073100;
+$plugin->version = 2026100600;
 $plugin->requires = 2024100700;
-$plugin->release = 'v1.0.0';
+$plugin->release = 'v1.1.0';
 $plugin->maturity = MATURITY_STABLE;
 $plugin->dependencies = [
     'tool_zoomapi' => 2026060300,

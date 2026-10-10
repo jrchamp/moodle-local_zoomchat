@@ -72,6 +72,9 @@ function local_zoomchat_pluginfile($course, $cm, $context, $filearea, $args, $fo
     }
 
     if ($allowed) {
+        if (!\local_zoomchat\helper::is_inline_image_mimetype($file->get_mimetype())) {
+            $forcedownload = true;
+        }
         send_stored_file($file, DAYSECS, 0, $forcedownload, $options);
     }
 

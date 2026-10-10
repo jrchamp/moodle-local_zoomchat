@@ -86,6 +86,10 @@ class send_message extends external_api {
 
         session_manager::write_close();
 
+        if (!zoomchat_helper::can_message_user($USER, $recipient)) {
+            return ['success' => false, 'error' => get_string('error:notacontact', 'local_zoomchat')];
+        }
+
         $result = zoomchat_helper::send_message_to_zoom(
             $USER,
             $recipient,

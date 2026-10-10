@@ -33,6 +33,7 @@ $string['error:invalidaction'] = 'Invalid action.';
 $string['error:loadfailed'] = 'Failed to load messages.';
 $string['error:norecipientzoom'] = 'The recipient does not have a Zoom account.';
 $string['error:nosenderzoom'] = 'Your account is not linked to Zoom.';
+$string['error:notacontact'] = 'You are not allowed to message this user.';
 $string['error:onlyimages'] = 'Only image files are allowed.';
 $string['error:sendfailed'] = 'Failed to send message.';
 $string['file'] = 'File';

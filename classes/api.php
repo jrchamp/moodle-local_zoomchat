@@ -52,6 +52,32 @@ class api extends zoomapi_base {
     }
 
     /**
+     * Get the HTTP client options for Zoom API requests.
+     *
+     * @param array $options Options overriding the defaults.
+     * @return array The complete client options.
+     */
+    protected function get_client_options(array $options = []): array {
+        $options += ['headers' => []];
+        $options['headers'] += [
+            'Authorization' => 'Bearer ' . $this->get_access_token(),
+        ];
+
+        $defaults = [
+            'http_errors' => false,
+            'allow_redirects' => [
+                'max' => 5,
+                'referer' => false,
+                'protocols' => ['https'],
+            ],
+            'connect_timeout' => 30,
+            'timeout' => 120,
+        ];
+
+        return $options + $defaults;
+    }
+
+    /**
      * Send a chat message via the Zoom API.
      *
      * @param string $userid Zoom user ID of the sender.
@@ -86,18 +112,10 @@ class api extends zoomapi_base {
             throw new moodle_exception('error:api', 'tool_zoomapi', '', 'No download URL for file');
         }
 
-        $accesstoken = $this->get_access_token();
+        $options = $this->get_client_options();
 
         try {
-            $response = $this->client->get($fileinfo['download_url'], [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $accesstoken,
-                ],
-                'http_errors' => false,
-                'allow_redirects' => true,
-                'connect_timeout' => 30,
-                'timeout' => 120,
-            ]);
+            $response = $this->client->get($fileinfo['download_url'], $options);
 
             $status = $response->getStatusCode();
             if ($status >= 400) {
@@ -126,26 +144,19 @@ class api extends zoomapi_base {
      * @throws \moodle_exception
      */
     public function upload_chat_file(string $userid, string $filepath, string $filename): string {
-        $accesstoken = $this->get_access_token();
         $url = "https://file.zoom.us/v2/chat/users/{$userid}/files";
+        $options = $this->get_client_options([
+            'multipart' => [
+                [
+                    'name' => 'file',
+                    'contents' => fopen($filepath, 'r'),
+                    'filename' => $filename,
+                ],
+            ],
+        ]);
 
         try {
-            $response = $this->client->post($url, [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $accesstoken,
-                ],
-                'multipart' => [
-                    [
-                        'name' => 'file',
-                        'contents' => fopen($filepath, 'r'),
-                        'filename' => $filename,
-                    ],
-                ],
-                'http_errors' => false,
-                'allow_redirects' => true,
-                'connect_timeout' => 30,
-                'timeout' => 120,
-            ]);
+            $response = $this->client->post($url, $options);
 
             $body = json_decode($response->getBody()->getContents(), true);
             $status = $response->getStatusCode();

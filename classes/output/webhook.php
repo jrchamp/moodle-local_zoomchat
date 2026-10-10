@@ -147,7 +147,9 @@ class webhook {
      * @param array $data
      */
     private static function respond(int $statuscode, array $data): void {
-        http_response_code($statuscode);
+        if (!headers_sent()) {
+            http_response_code($statuscode);
+        }
         echo json_encode($data);
     }
 

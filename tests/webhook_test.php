@@ -34,8 +34,8 @@ use ReflectionMethod;
  * @package local_zoomchat
  * @copyright 2026 Jonathan Champ
  * @license https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers \local_zoomchat\output\webhook
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(webhook::class)]
 final class webhook_test extends advanced_testcase {
     /**
      * Remove request headers set by individual tests.
